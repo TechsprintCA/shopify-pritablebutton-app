@@ -1,0 +1,24 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "8772cfd2815d09f721394db34f997d86"
+name = "pritablebutton-app"
+handle = "pritablebutton-app-1"
+application_url = "https://fcc-coleman-conflict-regulated.trycloudflare.com"
+embedded = true
+
+[build]
+include_config_on_deploy = true
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2025-07"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products"
+
+[auth]
+redirect_urls = ["https://fcc-coleman-conflict-regulated.trycloudflare.com/auth/callback", "https://fcc-coleman-conflict-regulated.trycloudflare.com/auth/shopify/callback", "https://fcc-coleman-conflict-regulated.trycloudflare.com/api/auth/callback"]
+
+[pos]
+embedded = false
