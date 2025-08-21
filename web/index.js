@@ -20,6 +20,17 @@ const STATIC_PATH =
 
 const app = express();
 
+
+const validateAuthenticatedSession = (req, res, next) => {
+  const shop = req.query.shop;
+  if (!shop) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  next();
+}
+
+
+
 // Set up Shopify authentication and webhook handling
 app.get(shopify.config.auth.path, shopify.auth.begin());
 app.get(
@@ -39,6 +50,38 @@ app.use("/api/*", shopify.validateAuthenticatedSession());
 
 app.use(express.json());
 
+// MODIFIED: This route now handles multiple data endpoints based on 'action' parameter
+app.get("/data/*", validateAuthenticatedSession, async (req, res) => {
+  const { shop, email, tags, id } = req.query;
+
+  if(!shop){
+    return res.status(400).json({ error: "Shop parameter is required" });
+  }
+  else{
+    console.log(`Shop: ${shop}`);
+    console.log(`Email: ${email}`);
+    console.log(`Tags: ${tags}`);
+    console.log(`ID: ${id}`);
+    return res.status(200).json({ message: "Authenticated", shop, email, tags, id });
+  }
+
+})
+app.post("/data/*", validateAuthenticatedSession, async (req, res) => {
+  console.log(req.body);
+  const { shop, email, tags, id } = req.body;
+
+  if(!shop){
+    return res.status(400).json({ error: "Shop parameter is required" });
+  }
+  else{
+    console.log(`Shop: ${shop}`);
+    console.log(`Email: ${email}`);
+    console.log(`Tags: ${tags}`);
+    console.log(`ID: ${id}`);
+    return res.status(200).json({ message: "Authenticated", shop, email, tags, id });
+  }
+
+})
 app.get("/api/products/count", async (_req, res) => {
   const client = new shopify.api.clients.Graphql({
     session: res.locals.shopify.session,

@@ -3,7 +3,7 @@
 client_id = "8772cfd2815d09f721394db34f997d86"
 name = "pritablebutton-app"
 handle = "pritablebutton-app-1"
-application_url = "https://fcc-coleman-conflict-regulated.trycloudflare.com"
+application_url = "https://earn-timeline-assurance-continue.trycloudflare.com"
 embedded = true
 
 [build]
@@ -18,7 +18,7 @@ api_version = "2025-07"
 scopes = "write_products"
 
 [auth]
-redirect_urls = ["https://fcc-coleman-conflict-regulated.trycloudflare.com/auth/callback", "https://fcc-coleman-conflict-regulated.trycloudflare.com/auth/shopify/callback", "https://fcc-coleman-conflict-regulated.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://earn-timeline-assurance-continue.trycloudflare.com/auth/callback", "https://earn-timeline-assurance-continue.trycloudflare.com/auth/shopify/callback", "https://earn-timeline-assurance-continue.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false
