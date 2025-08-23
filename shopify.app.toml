@@ -3,7 +3,7 @@
 client_id = "8772cfd2815d09f721394db34f997d86"
 name = "pritablebutton-app"
 handle = "pritablebutton-app-1"
-application_url = "https://earn-timeline-assurance-continue.trycloudflare.com"
+application_url = "https://appears-availability-g-exports.trycloudflare.com"
 embedded = true
 
 [build]
@@ -15,10 +15,19 @@ api_version = "2025-07"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products"
+scopes = "read_products,write_products,read_customers,write_customers"
 
 [auth]
-redirect_urls = ["https://earn-timeline-assurance-continue.trycloudflare.com/auth/callback", "https://earn-timeline-assurance-continue.trycloudflare.com/auth/shopify/callback", "https://earn-timeline-assurance-continue.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://appears-availability-g-exports.trycloudflare.com/auth/callback", "https://appears-availability-g-exports.trycloudflare.com/auth/shopify/callback", "https://appears-availability-g-exports.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false
+
+# App Proxy config so CLI deploy preserves your proxy instead of removing it
+[app_proxy]
+prefix = "apps"
+# The path shoppers visit on the store, e.g. https://{shop}/apps/data/...
+subpath = "proxy"
+# Where Shopify forwards requests. It will append the remainder of the path and query.
+# This should point to your backend route that handles the proxy, which is /data/* in this app.
+url = "https://appears-availability-g-exports.trycloudflare.com/data/info"
