@@ -279,6 +279,27 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
         customerId = createResp?.data?.customerCreate?.customer?.id;
       }
 
+      // Ensure the customer has the product ID as a tag (idempotent)
+      const productIdTag = String(product_id).replace(/[^0-9]/g, "");
+      if (productIdTag) {
+        const tagsAddMutation = `#graphql
+          mutation TagsAdd($id: ID!, $tags: [String!]!) {
+            tagsAdd(id: $id, tags: $tags) {
+              userErrors { field message }
+            }
+          }
+        `;
+        const tagResp = await client.request(tagsAddMutation, {
+          variables: { id: customerId, tags: [productIdTag] }
+        });
+        const tagErrors = tagResp?.data?.tagsAdd?.userErrors || [];
+        if (tagErrors.length > 0) {
+          console.error('Customer tag add errors:', tagErrors);
+          res.status(500).json({ error: "Failed to add product tag to customer", details: tagErrors });
+          return;
+        }
+      }
+
       // Build Shopify GID for lookup from provided product_id, but store product_id as-is
       const productGid = `gid://shopify/Product/${String(product_id).replace(/[^0-9]/g, "")}`;
 

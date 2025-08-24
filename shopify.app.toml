@@ -3,7 +3,7 @@
 client_id = "8772cfd2815d09f721394db34f997d86"
 name = "pritablebutton-app"
 handle = "pritablebutton-app-1"
-application_url = "https://biographies-rotary-enclosed-pan.trycloudflare.com"
+application_url = "https://initial-western-tech-jon.trycloudflare.com"
 embedded = true
 
 [build]
@@ -18,7 +18,7 @@ api_version = "2025-07"
 scopes = "read_products,write_products,read_customers,write_customers"
 
 [auth]
-redirect_urls = ["https://biographies-rotary-enclosed-pan.trycloudflare.com/auth/callback", "https://biographies-rotary-enclosed-pan.trycloudflare.com/auth/shopify/callback", "https://biographies-rotary-enclosed-pan.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://initial-western-tech-jon.trycloudflare.com/auth/callback", "https://initial-western-tech-jon.trycloudflare.com/auth/shopify/callback", "https://initial-western-tech-jon.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false
@@ -30,4 +30,4 @@ prefix = "apps"
 subpath = "proxy"
 # Where Shopify forwards requests. It will append the remainder of the path and query.
 # This should point to your backend route that handles the proxy, which is /data/* in this app.
-url = "https://biographies-rotary-enclosed-pan.trycloudflare.com/data/info"
+url = "https://initial-western-tech-jon.trycloudflare.com/data/info"
