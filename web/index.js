@@ -460,6 +460,88 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
     }
   }
 
+  if (action === "already_downloaded"){
+    const { name, email, product_id, tags } = req.body;
+    if (!name || !email || !product_id) {
+      res.status(400).json({
+        error: "Missing required fields: name, email, and product_id are required"
+      });
+      return;
+    }
+
+    // Ensure admin session (from validateAppProxy)
+    const session = res.locals?.shopify?.session;
+    if (!session) {
+      res.status(401).json({ error: "No valid session found" });
+      return;
+    }
+
+    // Validate that customer has a tag equal to the product_id (digits only)
+    const productIdTag = String(product_id).replace(/[^0-9]/g, "");
+    const tagsArray = Array.isArray(tags)
+      ? tags
+      : (typeof tags === "string" ? tags.split(",").map((t) => t.trim()) : []);
+    const hasProductTag = tagsArray.some((t) => String(t || "").replace(/[^0-9]/g, "") === productIdTag);
+    if (!hasProductTag) {
+      res.status(403).json({ error: "Customer is not authorized for this product" });
+      return;
+    }
+
+    try {
+      // Lookup product in DB using GID constructed from numeric ID
+      const productGid = `gid://shopify/Product/${productIdTag}`;
+      const productResult = await db.query(
+        "SELECT product_gid, title, pdf_url FROM products WHERE shop_domain = $1 AND product_gid = $2",
+        [session.shop, productGid]
+      );
+
+      if (productResult.rows.length === 0) {
+        res.status(404).json({ error: "Product not found", product_id });
+        return;
+      }
+
+      const product = productResult.rows[0];
+
+      // Update downloads list for this customer (upsert, idempotent append)
+      const firstName = (name || "").trim().split(' ')[0] || '';
+      const lastName = (name || "").trim().split(' ').slice(1).join(' ') || '';
+      await db.query(`
+        INSERT INTO customers (shop_domain, customer_gid, email, first_name, last_name, downloads)
+        VALUES ($1, $2, $3, $4, $5, ARRAY[$6])
+        ON CONFLICT (shop_domain, lower(email))
+        DO UPDATE SET
+          first_name = EXCLUDED.first_name,
+          last_name = EXCLUDED.last_name,
+          downloads = CASE
+            WHEN $6 = ANY(customers.downloads) THEN customers.downloads
+            ELSE array_append(customers.downloads, $6)
+          END,
+          updated_at = now()
+      `, [
+        session.shop,
+        null, // customer_gid not used here
+        email,
+        firstName,
+        lastName,
+        product_id
+      ]);
+
+      res.status(200).json({
+        success: true,
+        product: {
+          id: product['product_gid'],
+          title: product['title'],
+          pdf_url: product['pdf_url']
+        }
+      });
+      return;
+    } catch (error) {
+      console.error('Error in already_downloaded:', error);
+      res.status(500).json({ error: "Internal server error", details: error.message });
+      return;
+    }
+  }
+
 })
 
 app.get("/api/products/count", async (_req, res) => {
