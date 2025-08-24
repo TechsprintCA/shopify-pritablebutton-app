@@ -279,10 +279,8 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
         customerId = createResp?.data?.customerCreate?.customer?.id;
       }
 
-      // Normalize product id to Shopify GID format if needed
-      const productGid = (typeof product_id === 'string' ? product_id : String(product_id)).startsWith('gid://')
-        ? String(product_id)
-        : `gid://shopify/Product/${String(product_id)}`;
+      // Build Shopify GID for lookup from provided product_id, but store product_id as-is
+      const productGid = `gid://shopify/Product/${String(product_id).replace(/[^0-9]/g, "")}`;
 
       // Now find the product in our database
       const productResult = await db.query(
@@ -342,6 +340,101 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
         error: "Internal server error", 
         details: error.message 
       });
+      return;
+    }
+  }
+
+  if (action === "lifetime_access-download"){
+    const { name, email, product_id, tags } = req.body;
+    if (!name || !email || !product_id) {
+      res.status(400).json({
+        error: "Missing required fields: name, email, and product_id are required"
+      });
+      return;
+    }
+
+    // Ensure we have an admin session (loaded via validateAppProxy)
+    const session = res.locals?.shopify?.session;
+    if (!session) {
+      res.status(401).json({ error: "No valid session found" });
+      return;
+    }
+
+    // Check lifetime_access tag from provided tags
+    const tagsArray = Array.isArray(tags)
+      ? tags
+      : (typeof tags === "string" ? tags.split(",").map((t) => t.trim()) : []);
+    const hasLifetimeAccess = tagsArray.some((t) => (t || "").toLowerCase() === "lifetime_access");
+    if (!hasLifetimeAccess) {
+      res.status(403).json({ error: "Customer does not have lifetime_access tag" });
+      return;
+    }
+
+    try {
+      // Build Shopify GID for lookup from provided product_id, but store product_id as-is
+      const productGid = `gid://shopify/Product/${String(product_id).replace(/[^0-9]/g, "")}`;
+
+      // Lookup product in DB
+      const productResult = await db.query(
+        "SELECT product_gid, title, pdf_url FROM products WHERE shop_domain = $1 AND product_gid = $2",
+        [session.shop, productGid]
+      );
+
+      if (productResult.rows.length === 0) {
+        res.status(404).json({ error: "Product not found", product_id });
+        return;
+      }
+
+      const product = productResult.rows[0];
+
+      const firstName = (name || "").trim().split(' ')[0] || '';
+      const lastName = (name || "").trim().split(' ').slice(1).join(' ') || '';
+
+      // Upsert customer with lifetime_access = true and update downloads list
+      await db.query(`
+        INSERT INTO customers (shop_domain, customer_gid, email, first_name, last_name, downloads, lifetime_access)
+        VALUES ($1, $2, $3, $4, $5, ARRAY[$6], true)
+        ON CONFLICT (shop_domain, lower(email))
+        DO UPDATE SET
+          first_name = EXCLUDED.first_name,
+          last_name = EXCLUDED.last_name,
+          lifetime_access = true,
+          downloads = CASE
+            WHEN $6 = ANY(customers.downloads) THEN customers.downloads
+            ELSE array_append(customers.downloads, $6)
+          END,
+          updated_at = now()
+      `, [
+        session.shop,
+        null, // customer_gid unknown in this flow
+        email,
+        firstName,
+        lastName,
+        product_id
+      ]);
+
+      res.status(200).json({
+        success: true,
+        message: "Lifetime access verified and download recorded",
+        product: {
+          id: product['product_gid'],
+          title: product['title'],
+          pdf_url: product['pdf_url']
+        }
+      });
+      // console.log("Lifetime access download recorded", {
+      //   success: true,
+      //   message: "Lifetime access verified and download recorded",
+      //   product: {
+      //     id: product['product_gid'],
+      //     title: product['title'],
+      //     pdf_url: product['pdf_url']
+      //   }
+      // })
+      return;
+    } catch (error) {
+      console.error('Error in lifetime_access-download:', error);
+      res.status(500).json({ error: "Internal server error", details: error.message });
       return;
     }
   }
