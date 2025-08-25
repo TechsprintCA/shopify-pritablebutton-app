@@ -52,46 +52,7 @@ export default {
       }
     },
   },
-  ORDERS_PAID: {
-    deliveryMethod: DeliveryMethod.Http,
-    callbackUrl: "/api/webhooks",
-    callback: async (topic, shop, body, webhookId) => {
-      console.log("💰 ORDERS_PAID webhook received!", { 
-        timestamp: new Date().toISOString(),
-        shop, 
-        webhookId,
-        bodyLength: body?.length || 0
-      });
-      
-      try {
-        const payload = JSON.parse(body);
-        console.log("💳 ORDERS_PAID Details:", { 
-          shop, 
-          orderId: payload?.id, 
-          orderNumber: payload?.order_number,
-          webhookId,
-          financial_status: payload?.financial_status,
-          gateway: payload?.gateway,
-          test: payload?.test,
-          total_price: payload?.total_price,
-          customer_email: payload?.customer?.email,
-          line_items_count: payload?.line_items?.length || 0,
-          confirmed: payload?.confirmed
-        });
 
-        // Also try to process digital products on ORDERS_PAID as a backup
-        if (payload?.confirmed) {
-          console.log("✅ ORDERS_PAID: Order is confirmed, processing digital products...");
-          await processDigitalProductOrder(payload, shop);
-        } else {
-          console.log("⏳ ORDERS_PAID: Order not confirmed yet");
-        }
-      } catch (e) {
-        console.error("❌ ORDERS_PAID parsing error:", e);
-        console.log("📄 ORDERS_PAID raw body:", body?.substring(0, 500) + "...");
-      }
-    },
-  },
 
 };
 
