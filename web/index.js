@@ -8,6 +8,7 @@ import shopify from "./shopify.js";
 import db from "./db.js";
 import productCreator from "./product-creator.js";
 import PrivacyWebhookHandlers from "./privacy.js";
+import OrderWebhookHandlers from "./webhooks.js";
 import { sendDownloadEmail } from "./emailService.js";
 import { ApiVersion } from "@shopify/shopify-api";
 import dotenv from "dotenv";
@@ -70,9 +71,15 @@ app.get(
   shopify.auth.callback(),
   shopify.redirectToShopifyOrAppRoot()
 );
+// Combine both webhook handlers
+const AllWebhookHandlers = {
+  ...PrivacyWebhookHandlers,
+  ...OrderWebhookHandlers,
+};
+
 app.post(
   shopify.config.webhooks.path,
-  shopify.processWebhooks({ webhookHandlers: PrivacyWebhookHandlers })
+  shopify.processWebhooks({ webhookHandlers: AllWebhookHandlers })
 );
 
 // If you are adding routes outside of the /api path, remember to
@@ -613,6 +620,99 @@ app.get("/api/products/count", async (_req, res) => {
     }
   `);
   res.status(200).send({ count: countData.data.productsCount.count });
+});
+
+// Check webhook URL
+app.get("/api/webhook-url", async (_req, res) => {
+  const appUrl = process.env.SHOPIFY_APP_URL || process.env.HOST || 'https://connections-florist-explained-canberra.trycloudflare.com';
+  const webhookUrl = `${appUrl}/api/webhooks`;
+  
+  res.json({
+    SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL,
+    HOST: process.env.HOST,
+    fallbackUrl: 'https://connections-florist-explained-canberra.trycloudflare.com',
+    finalWebhookUrl: webhookUrl,
+    envVars: Object.keys(process.env).filter(key => key.includes('SHOPIFY') || key.includes('HOST'))
+  });
+});
+
+// Test webhook registration
+app.post("/api/register-webhooks", async (_req, res) => {
+  try {
+    const session = res.locals.shopify.session;
+    if (!session) {
+      res.status(401).json({ error: "No session" });
+      return;
+    }
+
+    const client = new shopify.api.clients.Graphql({
+      session: session,
+      apiVersion: ApiVersion.July25,
+    });
+
+    // Get the webhook URL - try multiple sources
+    const appUrl = process.env.SHOPIFY_APP_URL || process.env.HOST || 'https://connections-florist-explained-canberra.trycloudflare.com';
+    const webhookUrl = `${appUrl}/api/webhooks`;
+    
+    console.log(`🔧 Environment check:`, {
+      SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL,
+      HOST: process.env.HOST,
+      finalWebhookUrl: webhookUrl
+    });
+    
+    console.log(`🔧 Registering webhooks for ${session.shop} with URL: ${webhookUrl}`);
+
+    const webhookMutation = `#graphql
+      mutation webhookSubscriptionCreate($topic: WebhookSubscriptionTopic!, $webhookSubscription: WebhookSubscriptionInput!) {
+        webhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription) {
+          webhookSubscription {
+            id
+            callbackUrl
+            topic
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    // Register ORDERS_CREATE
+    const ordersCreateResp = await client.request(webhookMutation, {
+      variables: {
+        topic: "ORDERS_CREATE",
+        webhookSubscription: {
+          callbackUrl: webhookUrl,
+          format: "JSON"
+        }
+      }
+    });
+
+    // Register ORDERS_PAID  
+    const ordersPaidResp = await client.request(webhookMutation, {
+      variables: {
+        topic: "ORDERS_PAID",
+        webhookSubscription: {
+          callbackUrl: webhookUrl,
+          format: "JSON"
+        }
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      webhookUrl,
+      results: {
+        ordersCreate: ordersCreateResp?.data?.webhookSubscriptionCreate,
+        ordersPaid: ordersPaidResp?.data?.webhookSubscriptionCreate
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Webhook registration error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 
