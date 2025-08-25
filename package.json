@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "pg": "^8.11.5",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "nodemailer": "^6.9.8"
   },
   "author": "alimr",
   "private": true,

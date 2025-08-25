@@ -8,6 +8,7 @@ import shopify from "./shopify.js";
 import db from "./db.js";
 import productCreator from "./product-creator.js";
 import PrivacyWebhookHandlers from "./privacy.js";
+import { sendDownloadEmail } from "./emailService.js";
 import { ApiVersion } from "@shopify/shopify-api";
 import dotenv from "dotenv";
 dotenv.config({ path: '../.env' });
@@ -344,9 +345,27 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
 
       console.log(`Successfully processed customer ${email} for product ${product_id}`);
 
+      // Send download email
+      try {
+        const emailResult = await sendDownloadEmail(
+          email,
+          name,
+          product['title'],
+          product['pdf_url'],
+          session.shop
+        );
+        if (emailResult.success) {
+          console.log(`Download email sent to ${email}`);
+        } else {
+          console.error(`Failed to send email to ${email}:`, emailResult.error);
+        }
+      } catch (emailError) {
+        console.error(`Email sending error for ${email}:`, emailError);
+      }
+
       res.status(200).json({
         success: true,
-        message: "Customer created/updated and download recorded",
+        message: "Customer created/updated, download recorded, and email sent",
         customer_id: customerId,
         product: {
           id: product['product_gid'],
@@ -434,9 +453,27 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
         product_id
       ]);
 
+      // Send download email
+      try {
+        const emailResult = await sendDownloadEmail(
+          email,
+          name,
+          product['title'],
+          product['pdf_url'],
+          session.shop
+        );
+        if (emailResult.success) {
+          console.log(`Lifetime access download email sent to ${email}`);
+        } else {
+          console.error(`Failed to send email to ${email}:`, emailResult.error);
+        }
+      } catch (emailError) {
+        console.error(`Email sending error for ${email}:`, emailError);
+      }
+
       res.status(200).json({
         success: true,
-        message: "Lifetime access verified and download recorded",
+        message: "Lifetime access verified, download recorded, and email sent",
         product: {
           id: product['product_gid'],
           title: product['title'],
@@ -526,8 +563,27 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
         product_id
       ]);
 
+      // Send download email
+      try {
+        const emailResult = await sendDownloadEmail(
+          email,
+          name,
+          product['title'],
+          product['pdf_url'],
+          session.shop
+        );
+        if (emailResult.success) {
+          console.log(`Already downloaded - email sent to ${email}`);
+        } else {
+          console.error(`Failed to send email to ${email}:`, emailResult.error);
+        }
+      } catch (emailError) {
+        console.error(`Email sending error for ${email}:`, emailError);
+      }
+
       res.status(200).json({
         success: true,
+        message: "Download access confirmed and email sent",
         product: {
           id: product['product_gid'],
           title: product['title'],
