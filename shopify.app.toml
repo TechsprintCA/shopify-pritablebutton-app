@@ -3,7 +3,7 @@
 client_id = "8772cfd2815d09f721394db34f997d86"
 name = "pritablebutton-app"
 handle = "pritablebutton-app-1"
-application_url = "https://concrete-lowest-biographies-loaded.trycloudflare.com"
+application_url = "https://hourly-billion-useful-ranging.trycloudflare.com"
 embedded = true
 
 [build]
@@ -15,10 +15,10 @@ api_version = "2025-07"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_products,write_products,read_customers,write_customers"
+scopes = "read_products,write_products,read_customers,write_customers,read_orders,write_orders,read_order_edits,write_order_edits"
 
 [auth]
-redirect_urls = ["https://concrete-lowest-biographies-loaded.trycloudflare.com/auth/callback", "https://concrete-lowest-biographies-loaded.trycloudflare.com/auth/shopify/callback", "https://concrete-lowest-biographies-loaded.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://hourly-billion-useful-ranging.trycloudflare.com/auth/callback", "https://hourly-billion-useful-ranging.trycloudflare.com/auth/shopify/callback", "https://hourly-billion-useful-ranging.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false
@@ -30,4 +30,4 @@ prefix = "apps"
 subpath = "proxy"
 # Where Shopify forwards requests. It will append the remainder of the path and query.
 # This should point to your backend route that handles the proxy, which is /data/* in this app.
-url = "https://concrete-lowest-biographies-loaded.trycloudflare.com/data/info"
+url = "https://hourly-billion-useful-ranging.trycloudflare.com/data/info"
