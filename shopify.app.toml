@@ -3,7 +3,7 @@
 client_id = "8772cfd2815d09f721394db34f997d86"
 name = "pritablebutton-app"
 handle = "pritablebutton-app-1"
-application_url = "https://connections-florist-explained-canberra.trycloudflare.com"
+application_url = "https://receptors-haiti-bless-boating.trycloudflare.com"
 embedded = true
 
 [build]
@@ -18,7 +18,7 @@ api_version = "2025-07"
 scopes = "read_products,write_products,read_customers,write_customers,read_orders,write_orders,read_order_edits,write_order_edits"
 
 [auth]
-redirect_urls = ["https://connections-florist-explained-canberra.trycloudflare.com/auth/callback", "https://connections-florist-explained-canberra.trycloudflare.com/auth/shopify/callback", "https://connections-florist-explained-canberra.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://receptors-haiti-bless-boating.trycloudflare.com/auth/callback", "https://receptors-haiti-bless-boating.trycloudflare.com/auth/shopify/callback", "https://receptors-haiti-bless-boating.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false
@@ -30,4 +30,4 @@ prefix = "apps"
 subpath = "proxy"
 # Where Shopify forwards requests. It will append the remainder of the path and query.
 # This should point to your backend route that handles the proxy, which is /data/* in this app.
-url = "https://connections-florist-explained-canberra.trycloudflare.com/data/info"
+url = "https://receptors-haiti-bless-boating.trycloudflare.com/data/info"

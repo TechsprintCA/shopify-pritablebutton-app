@@ -84,7 +84,8 @@ async function processDigitalProductOrder(orderPayload, shopDomain) {
     const productTags = [];
 
     for (const item of lineItems) {
-      if (item.product_id) {
+      // Only process digital products (require_shipping === false)
+      if (item.product_id && item.requires_shipping === false) {
         const productGid = `gid://shopify/Product/${item.product_id}`;
         
         // Check if this product exists in our digital products database
@@ -104,7 +105,14 @@ async function processDigitalProductOrder(orderPayload, shopDomain) {
           });
           productIds.push(item.product_id.toString());
           productTags.push(item.product_id.toString());
+          console.log(`✅ Found digital product: ${product.title} (ID: ${item.product_id})`);
+        } else {
+          console.log(`⚠️ Digital product not found in database: ${item.product_id}`);
         }
+      } else if (item.requires_shipping === true) {
+        console.log(`📦 Skipping physical product: ${item.title || item.product_id} (requires shipping)`);
+      } else {
+        console.log(`❓ Skipping product with unknown shipping requirement: ${item.title || item.product_id}`);
       }
     }
 
@@ -113,7 +121,7 @@ async function processDigitalProductOrder(orderPayload, shopDomain) {
       return;
     }
 
-    console.log(`Found ${digitalProducts.length} digital products in order`);
+    console.log(`🎯 Found ${digitalProducts.length} digital products in order (filtered by requires_shipping=false)`);
 
     // Create/update customer in our database
     const firstName = customer.first_name || '';
@@ -150,7 +158,7 @@ async function processDigitalProductOrder(orderPayload, shopDomain) {
           apiVersion: ApiVersion.July25,
         });
 
-        // Add product ID tags to customer
+        // Add digital product ID tags to customer
         const tagsAddMutation = `#graphql
           mutation TagsAdd($id: ID!, $tags: [String!]!) {
             tagsAdd(id: $id, tags: $tags) {
@@ -160,15 +168,17 @@ async function processDigitalProductOrder(orderPayload, shopDomain) {
         `;
         
         const customerId = `gid://shopify/Customer/${customer.id}`;
+        console.log(`🏷️ Adding ${productTags.length} digital product tags to customer: ${productTags.join(', ')}`);
+        
         const tagResp = await client.request(tagsAddMutation, {
           variables: { id: customerId, tags: productTags }
         });
         
         const tagErrors = tagResp?.data?.tagsAdd?.userErrors || [];
         if (tagErrors.length > 0) {
-          console.error('Customer tag add errors:', tagErrors);
+          console.error('❌ Customer tag add errors:', tagErrors);
         } else {
-          console.log(`Added product tags to customer ${customerEmail}`);
+          console.log(`✅ Added ${productTags.length} digital product tags to customer ${customerEmail}`);
         }
       }
     } catch (sessionError) {
