@@ -648,6 +648,143 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
     }
   }
 
+  if (action === "customer-downloads") {
+    const { name, email, tags } = req.body;
+    if (!name || !email) {
+      res.status(400).json({
+        error: "Missing required fields: name and email are required"
+      });
+      return;
+    }
+
+    // Ensure admin session (from validateAppProxy)
+    const session = res.locals?.shopify?.session;
+    if (!session) {
+      res.status(401).json({ error: "No valid session found" });
+      return;
+    }
+
+    try {
+      console.log(`🔍 Looking up downloads for customer: ${email}`);
+
+      // Get customer from our database
+      const customerResult = await db.query(
+        "SELECT * FROM customers WHERE shop_domain = $1 AND lower(email) = lower($2)",
+        [session.shop, email]
+      );
+
+      if (customerResult.rows.length === 0) {
+        res.status(404).json({
+          error: "Customer not found",
+          message: "No download history found for this email address"
+        });
+        return;
+      }
+
+      const customer = customerResult.rows[0];
+      const downloadedProductIds = customer['downloads'] || [];
+      
+      console.log(`📋 Customer found: ${customer['first_name']} ${customer['last_name']}`);
+      console.log(`📦 Downloaded products: ${downloadedProductIds.length} items`);
+
+      if (downloadedProductIds.length === 0) {
+        res.status(200).json({
+          success: true,
+          customer: {
+            name: `${customer['first_name']} ${customer['last_name']}`.trim(),
+            email: customer['email'],
+            lifetime_access: customer['lifetime_access']
+          },
+          downloads: [],
+          message: "No downloads found for this customer"
+        });
+        return;
+      }
+
+      // Get unique product IDs (filter duplicates)
+      const uniqueProductIds = [...new Set(downloadedProductIds)];
+      console.log(`🔍 Unique products: ${uniqueProductIds.length} (filtered from ${downloadedProductIds.length} total downloads)`);
+      
+      // Get product details for each unique downloaded product
+      const downloadedProducts = [];
+      
+      for (const productId of uniqueProductIds) {
+        try {
+          console.log(`🔍 Getting details for product: ${productId}`);
+          
+          const numericProductId = String(productId).replace(/[^0-9]/g, "");
+          const productGid = `gid://shopify/Product/${numericProductId}`;
+          
+          // Get PDF URL from metafield
+          const pdfUrl = await getProductPDFUrl(productId, session.shop);
+          
+          // Get product details from Shopify API (title and image)
+          const productDetails = await getProductDetails(productGid, session);
+          
+          if (pdfUrl) {
+            downloadedProducts.push({
+              product_id: productId,
+              product_gid: productGid,
+              title: productDetails.title || `Product ${productId}`,
+              pdf_url: pdfUrl,
+              image_url: productDetails.image_url,
+              download_count: downloadedProductIds.filter(id => id === productId).length
+            });
+            
+            console.log(`✅ Added product: ${productDetails.title || productId}`);
+          } else {
+            console.log(`⚠️ No PDF found for product: ${productId}`);
+            // Still include it but without PDF URL
+            downloadedProducts.push({
+              product_id: productId,
+              product_gid: productGid,
+              title: productDetails.title || `Product ${productId}`,
+              pdf_url: null,
+              image_url: productDetails.image_url,
+              download_count: downloadedProductIds.filter(id => id === productId).length,
+              error: "PDF not available"
+            });
+          }
+        } catch (error) {
+          console.error(`❌ Error getting details for product ${productId}:`, error);
+          downloadedProducts.push({
+            product_id: productId,
+            product_gid: `gid://shopify/Product/${String(productId).replace(/[^0-9]/g, "")}`,
+            title: `Product ${productId}`,
+            pdf_url: null,
+            image_url: null,
+            download_count: downloadedProductIds.filter(id => id === productId).length,
+            error: "Failed to retrieve product details"
+          });
+        }
+      }
+
+      res.status(200).json({
+        success: true,
+        customer: {
+          name: `${customer['first_name']} ${customer['last_name']}`.trim(),
+          email: customer['email'],
+          lifetime_access: customer['lifetime_access'],
+          unique_products: downloadedProducts.length,
+          total_downloads: downloadedProductIds.length
+        },
+        downloads: downloadedProducts,
+        download_history: downloadedProductIds,
+        message: `Found ${downloadedProducts.length} unique products from ${downloadedProductIds.length} total downloads`
+      });
+
+      console.log(`✅ Successfully retrieved ${downloadedProducts.length} downloads for ${email}`);
+
+    } catch (error) {
+      console.error('Error in customer-downloads:', error);
+      res.status(500).json({ 
+        error: "Internal server error", 
+        details: error.message 
+      });
+      return;
+    }
+  }
+
 })
 
 app.get("/api/products/count", async (_req, res) => {
@@ -1064,6 +1201,76 @@ async function getFileUrlFromGid(fileGid, session) {
   } catch (error) {
     console.error(`❌ Error getting file URL from GID ${fileGid}:`, error);
     return null;
+  }
+}
+
+// Helper function to get product details (title and image) from Shopify
+async function getProductDetails(productGid, session) {
+  try {
+    console.log(`🔍 Getting product details for: ${productGid}`);
+    
+    const client = new shopify.api.clients.Graphql({
+      session: session,
+      apiVersion: ApiVersion.July25,
+    });
+
+    const productQuery = `#graphql
+      query GetProductDetails($id: ID!) {
+        product(id: $id) {
+          id
+          title
+          featuredImage {
+            id
+            url
+            altText
+            width
+            height
+          }
+          images(first: 1) {
+            nodes {
+              id
+              url
+              altText
+              width
+              height
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await client.request(productQuery, {
+      variables: { id: productGid }
+    });
+
+    const product = response?.data?.product;
+    if (!product) {
+      console.log(`❌ Product not found: ${productGid}`);
+      return { title: null, image_url: null };
+    }
+
+    // Get image URL (prefer featured image, fallback to first image)
+    let imageUrl = null;
+    if (product.featuredImage && product.featuredImage.url) {
+      imageUrl = product.featuredImage.url;
+    } else if (product.images && product.images.nodes.length > 0) {
+      imageUrl = product.images.nodes[0].url;
+    }
+
+    console.log(`📦 Product details:`, {
+      id: product.id,
+      title: product.title,
+      hasImage: !!imageUrl
+    });
+
+    return {
+      title: product.title,
+      image_url: imageUrl
+    };
+
+  } catch (error) {
+    console.error(`❌ Error getting product details for ${productGid}:`, error);
+    return { title: null, image_url: null };
   }
 }
 
