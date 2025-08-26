@@ -326,18 +326,8 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
         pdf_url: pdfUrl
       };
 
-      // Store/update digital product in database
-      await db.query(`
-        INSERT INTO products (shop_domain, product_gid, title, is_digital)
-        VALUES ($1, $2, $3, true)
-        ON CONFLICT (shop_domain, product_gid)
-        DO UPDATE SET
-          title = EXCLUDED.title,
-          is_digital = true,
-          updated_at = now()
-      `, [session.shop, product.product_gid, product.title]);
-      
-      console.log(`💾 Stored digital product in database: ${product.title}`);
+      // Product data comes from Shopify API - no need to store in database
+      console.log(`✅ Processing digital product: ${product.title}`);
 
       // Store customer in our database for tracking
       await db.query(`
@@ -448,18 +438,8 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
         pdf_url: pdfUrl
       };
 
-      // Store/update digital product in database
-      await db.query(`
-        INSERT INTO products (shop_domain, product_gid, title, is_digital)
-        VALUES ($1, $2, $3, true)
-        ON CONFLICT (shop_domain, product_gid)
-        DO UPDATE SET
-          title = EXCLUDED.title,
-          is_digital = true,
-          updated_at = now()
-      `, [session.shop, product.product_gid, product.title]);
-      
-      console.log(`💾 Stored digital product in database: ${product.title}`);
+      // Product data comes from Shopify API - no need to store in database
+      console.log(`✅ Processing digital product: ${product.title}`);
 
       const firstName = (name || "").trim().split(' ')[0] || '';
       const lastName = (name || "").trim().split(' ').slice(1).join(' ') || '';
@@ -576,18 +556,8 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
         pdf_url: pdfUrl
       };
 
-      // Store/update digital product in database
-      await db.query(`
-        INSERT INTO products (shop_domain, product_gid, title, is_digital)
-        VALUES ($1, $2, $3, true)
-        ON CONFLICT (shop_domain, product_gid)
-        DO UPDATE SET
-          title = EXCLUDED.title,
-          is_digital = true,
-          updated_at = now()
-      `, [session.shop, product.product_gid, product.title]);
-      
-      console.log(`💾 Stored digital product in database: ${product.title}`);
+      // Product data comes from Shopify API - no need to store in database
+      console.log(`✅ Processing digital product: ${product.title}`);
 
       // Update downloads list for this customer (upsert, idempotent append)
       const firstName = (name || "").trim().split(' ')[0] || '';
@@ -922,19 +892,8 @@ async function ensureTables() {
     console.log('Creating extension...');
     await db.query('CREATE EXTENSION IF NOT EXISTS "pgcrypto"');
     
-    console.log('Creating products table...');
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS products (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        shop_domain text NOT NULL,
-        product_gid text NOT NULL,
-        title text NOT NULL,
-        is_digital boolean DEFAULT false,
-        created_at timestamptz NOT NULL DEFAULT now(),
-        updated_at timestamptz NOT NULL DEFAULT now(),
-        UNIQUE (shop_domain, product_gid)
-      )
-    `);
+    // Products table removed - all product data comes from Shopify API
+    console.log('Products table not needed - using Shopify API directly');
     
     console.log('Creating customers table...');
     await db.query(`
@@ -953,18 +912,11 @@ async function ensureTables() {
       )
     `);
     
-    console.log('Updating table schema...');
-    // Remove pdf_url column if it exists (since we now use metafields)
-    await db.query('ALTER TABLE products DROP COLUMN IF EXISTS pdf_url');
-    // Remove is_free column if it exists (replaced with is_digital)
-    await db.query('ALTER TABLE products DROP COLUMN IF EXISTS is_free');
-    // Add is_digital column if it doesn't exist
-    await db.query('ALTER TABLE products ADD COLUMN IF NOT EXISTS is_digital boolean DEFAULT false');
+    // No products table schema updates needed
+    console.log('No products table to update - using Shopify API directly');
     
     console.log('Creating indexes...');
-    await db.query('CREATE INDEX IF NOT EXISTS idx_products_shop_domain ON products (shop_domain)');
-    await db.query('CREATE INDEX IF NOT EXISTS idx_products_product_gid ON products (product_gid)');
-    await db.query('CREATE INDEX IF NOT EXISTS idx_products_is_digital ON products (is_digital) WHERE is_digital = true');
+    // Only customer table indexes needed
     await db.query('CREATE INDEX IF NOT EXISTS idx_customers_shop_domain ON customers (shop_domain)');
     await db.query('CREATE UNIQUE INDEX IF NOT EXISTS ux_customers_shop_lower_email ON customers (shop_domain, lower(email))');
     await db.query('CREATE INDEX IF NOT EXISTS idx_customers_customer_gid ON customers (customer_gid) WHERE customer_gid IS NOT NULL');
