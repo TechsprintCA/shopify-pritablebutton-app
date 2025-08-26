@@ -92,10 +92,27 @@ async function processDigitalProductOrder(orderPayload, shopDomain) {
         const pdfUrl = await getProductPDFUrl(item.product_id, shopDomain);
         
         if (pdfUrl) {
+          // Get real product title from Shopify API if order title is missing/generic
+          let productTitle = item.title;
+          if (!productTitle || productTitle.includes('Product ')) {
+            try {
+              const { default: shopifyApp } = await import('./shopify.js');
+              const offlineId = shopifyApp.api.session.getOfflineId(shopDomain);
+              const session = await shopifyApp.config.sessionStorage.loadSession(offlineId);
+              if (session) {
+                const productDetails = await getProductDetailsFromAPI(productGid, session);
+                productTitle = productDetails.title || item.title || `Product ${item.product_id}`;
+              }
+            } catch (error) {
+              console.error(`Error getting product title for ${item.product_id}:`, error);
+              productTitle = item.title || `Product ${item.product_id}`;
+            }
+          }
+          
           digitalProducts.push({
             id: item.product_id,
             gid: productGid,
-            title: item.title || `Product ${item.product_id}`,
+            title: productTitle,
             pdf_url: pdfUrl,
             quantity: item.quantity
           });
@@ -539,5 +556,76 @@ async function getFileUrlFromGid(fileGid, session) {
   } catch (error) {
     console.error(`❌ Error getting file URL from GID ${fileGid}:`, error);
     return null;
+  }
+}
+
+// Helper function to get product details (title and image) from Shopify
+async function getProductDetailsFromAPI(productGid, session) {
+  try {
+    console.log(`🔍 Getting product details for: ${productGid}`);
+    
+    const { default: shopifyApp } = await import('./shopify.js');
+    const client = new shopifyApp.api.clients.Graphql({
+      session: session,
+      apiVersion: ApiVersion.July25,
+    });
+
+    const productQuery = `#graphql
+      query GetProductDetails($id: ID!) {
+        product(id: $id) {
+          id
+          title
+          featuredImage {
+            id
+            url
+            altText
+            width
+            height
+          }
+          images(first: 1) {
+            nodes {
+              id
+              url
+              altText
+              width
+              height
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await client.request(productQuery, {
+      variables: { id: productGid }
+    });
+
+    const product = response?.data?.product;
+    if (!product) {
+      console.log(`❌ Product not found: ${productGid}`);
+      return { title: null, image_url: null };
+    }
+
+    // Get image URL (prefer featured image, fallback to first image)
+    let imageUrl = null;
+    if (product.featuredImage && product.featuredImage.url) {
+      imageUrl = product.featuredImage.url;
+    } else if (product.images && product.images.nodes.length > 0) {
+      imageUrl = product.images.nodes[0].url;
+    }
+
+    console.log(`📦 Product details:`, {
+      id: product.id,
+      title: product.title,
+      hasImage: !!imageUrl
+    });
+
+    return {
+      title: product.title,
+      image_url: imageUrl
+    };
+
+  } catch (error) {
+    console.error(`❌ Error getting product details for ${productGid}:`, error);
+    return { title: null, image_url: null };
   }
 }

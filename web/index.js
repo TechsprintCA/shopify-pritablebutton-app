@@ -310,6 +310,7 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
 
       // Get PDF URL from Shopify Files API
       const numericProductId = String(product_id).replace(/[^0-9]/g, "");
+      const productGid = `gid://shopify/Product/${numericProductId}`;
       const pdfUrl = await getProductPDFUrl(numericProductId, session.shop);
       
       if (!pdfUrl) {
@@ -320,9 +321,11 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
         return;
       }
 
+      // Get real product details from Shopify API
+      const productDetails = await getProductDetails(productGid, session);
       const product = {
-        product_gid: `gid://shopify/Product/${numericProductId}`,
-        title: `Product ${numericProductId}`, // We'll get this from the order data or API if needed
+        product_gid: productGid,
+        title: productDetails.title || `Product ${numericProductId}`,
         pdf_url: pdfUrl
       };
 
@@ -422,6 +425,7 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
     try {
       // Get PDF URL from Shopify Files API
       const numericProductId = String(product_id).replace(/[^0-9]/g, "");
+      const productGid = `gid://shopify/Product/${numericProductId}`;
       const pdfUrl = await getProductPDFUrl(numericProductId, session.shop);
       
       if (!pdfUrl) {
@@ -432,9 +436,11 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
         return;
       }
 
+      // Get real product details from Shopify API
+      const productDetails = await getProductDetails(productGid, session);
       const product = {
-        product_gid: `gid://shopify/Product/${numericProductId}`,
-        title: `Product ${numericProductId}`,
+        product_gid: productGid,
+        title: productDetails.title || `Product ${numericProductId}`,
         pdf_url: pdfUrl
       };
 
@@ -550,9 +556,12 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
         return;
       }
 
+      // Get real product details from Shopify API
+      const productGid = `gid://shopify/Product/${productIdTag}`;
+      const productDetails = await getProductDetails(productGid, session);
       const product = {
-        product_gid: `gid://shopify/Product/${productIdTag}`,
-        title: `Product ${productIdTag}`,
+        product_gid: productGid,
+        title: productDetails.title || `Product ${productIdTag}`,
         pdf_url: pdfUrl
       };
 
