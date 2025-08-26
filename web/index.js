@@ -326,6 +326,19 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
         pdf_url: pdfUrl
       };
 
+      // Store/update digital product in database
+      await db.query(`
+        INSERT INTO products (shop_domain, product_gid, title, is_digital)
+        VALUES ($1, $2, $3, true)
+        ON CONFLICT (shop_domain, product_gid)
+        DO UPDATE SET
+          title = EXCLUDED.title,
+          is_digital = true,
+          updated_at = now()
+      `, [session.shop, product.product_gid, product.title]);
+      
+      console.log(`💾 Stored digital product in database: ${product.title}`);
+
       // Store customer in our database for tracking
       await db.query(`
         INSERT INTO customers (shop_domain, customer_gid, email, first_name, last_name, downloads)
@@ -434,6 +447,19 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
         title: `Product ${numericProductId}`,
         pdf_url: pdfUrl
       };
+
+      // Store/update digital product in database
+      await db.query(`
+        INSERT INTO products (shop_domain, product_gid, title, is_digital)
+        VALUES ($1, $2, $3, true)
+        ON CONFLICT (shop_domain, product_gid)
+        DO UPDATE SET
+          title = EXCLUDED.title,
+          is_digital = true,
+          updated_at = now()
+      `, [session.shop, product.product_gid, product.title]);
+      
+      console.log(`💾 Stored digital product in database: ${product.title}`);
 
       const firstName = (name || "").trim().split(' ')[0] || '';
       const lastName = (name || "").trim().split(' ').slice(1).join(' ') || '';
@@ -549,6 +575,19 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
         title: `Product ${productIdTag}`,
         pdf_url: pdfUrl
       };
+
+      // Store/update digital product in database
+      await db.query(`
+        INSERT INTO products (shop_domain, product_gid, title, is_digital)
+        VALUES ($1, $2, $3, true)
+        ON CONFLICT (shop_domain, product_gid)
+        DO UPDATE SET
+          title = EXCLUDED.title,
+          is_digital = true,
+          updated_at = now()
+      `, [session.shop, product.product_gid, product.title]);
+      
+      console.log(`💾 Stored digital product in database: ${product.title}`);
 
       // Update downloads list for this customer (upsert, idempotent append)
       const firstName = (name || "").trim().split(' ')[0] || '';
@@ -753,8 +792,7 @@ async function ensureTables() {
         shop_domain text NOT NULL,
         product_gid text NOT NULL,
         title text NOT NULL,
-        pdf_url text,
-        is_free boolean DEFAULT true,
+        is_digital boolean DEFAULT false,
         created_at timestamptz NOT NULL DEFAULT now(),
         updated_at timestamptz NOT NULL DEFAULT now(),
         UNIQUE (shop_domain, product_gid)
@@ -778,13 +816,23 @@ async function ensureTables() {
       )
     `);
     
+    console.log('Updating table schema...');
+    // Remove pdf_url column if it exists (since we now use metafields)
+    await db.query('ALTER TABLE products DROP COLUMN IF EXISTS pdf_url');
+    // Remove is_free column if it exists (replaced with is_digital)
+    await db.query('ALTER TABLE products DROP COLUMN IF EXISTS is_free');
+    // Add is_digital column if it doesn't exist
+    await db.query('ALTER TABLE products ADD COLUMN IF NOT EXISTS is_digital boolean DEFAULT false');
+    
     console.log('Creating indexes...');
     await db.query('CREATE INDEX IF NOT EXISTS idx_products_shop_domain ON products (shop_domain)');
     await db.query('CREATE INDEX IF NOT EXISTS idx_products_product_gid ON products (product_gid)');
+    await db.query('CREATE INDEX IF NOT EXISTS idx_products_is_digital ON products (is_digital) WHERE is_digital = true');
     await db.query('CREATE INDEX IF NOT EXISTS idx_customers_shop_domain ON customers (shop_domain)');
     await db.query('CREATE UNIQUE INDEX IF NOT EXISTS ux_customers_shop_lower_email ON customers (shop_domain, lower(email))');
     await db.query('CREATE INDEX IF NOT EXISTS idx_customers_customer_gid ON customers (customer_gid) WHERE customer_gid IS NOT NULL');
     await db.query('CREATE INDEX IF NOT EXISTS idx_customers_downloads_gin ON customers USING GIN (downloads)');
+    await db.query('CREATE INDEX IF NOT EXISTS idx_customers_lifetime_access ON customers (lifetime_access) WHERE lifetime_access = true');
     
     console.log('Database tables and indexes ensured successfully');
   } catch (error) {

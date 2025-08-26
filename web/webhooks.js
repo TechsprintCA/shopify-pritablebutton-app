@@ -102,6 +102,19 @@ async function processDigitalProductOrder(orderPayload, shopDomain) {
           productIds.push(item.product_id.toString());
           productTags.push(item.product_id.toString());
           console.log(`✅ Found digital product with PDF: ${item.title || item.product_id} (ID: ${item.product_id})`);
+          
+          // Store/update digital product in database
+          await db.query(`
+            INSERT INTO products (shop_domain, product_gid, title, is_digital)
+            VALUES ($1, $2, $3, true)
+            ON CONFLICT (shop_domain, product_gid)
+            DO UPDATE SET
+              title = EXCLUDED.title,
+              is_digital = true,
+              updated_at = now()
+          `, [shopDomain, productGid, item.title || `Product ${item.product_id}`]);
+          
+          console.log(`💾 Stored digital product in database: ${item.title || item.product_id}`);
         } else {
           console.log(`⚠️ No PDF file found for digital product: ${item.product_id}`);
         }
