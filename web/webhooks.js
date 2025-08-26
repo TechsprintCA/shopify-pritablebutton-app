@@ -88,26 +88,22 @@ async function processDigitalProductOrder(orderPayload, shopDomain) {
       if (item.product_id && item.requires_shipping === false) {
         const productGid = `gid://shopify/Product/${item.product_id}`;
         
-        // Check if this product exists in our digital products database
-        const productResult = await db.query(
-          "SELECT product_gid, title, pdf_url FROM products WHERE shop_domain = $1 AND product_gid = $2",
-          [shopDomain, productGid]
-        );
-
-        if (productResult.rows.length > 0) {
-          const product = productResult.rows[0];
+        // Get PDF file URL from Shopify Files API
+        const pdfUrl = await getProductPDFUrl(item.product_id, shopDomain);
+        
+        if (pdfUrl) {
           digitalProducts.push({
             id: item.product_id,
             gid: productGid,
-            title: product.title,
-            pdf_url: product.pdf_url,
+            title: item.title || `Product ${item.product_id}`,
+            pdf_url: pdfUrl,
             quantity: item.quantity
           });
           productIds.push(item.product_id.toString());
           productTags.push(item.product_id.toString());
-          console.log(`✅ Found digital product: ${product.title} (ID: ${item.product_id})`);
+          console.log(`✅ Found digital product with PDF: ${item.title || item.product_id} (ID: ${item.product_id})`);
         } else {
-          console.log(`⚠️ Digital product not found in database: ${item.product_id}`);
+          console.log(`⚠️ No PDF file found for digital product: ${item.product_id}`);
         }
       } else if (item.requires_shipping === true) {
         console.log(`📦 Skipping physical product: ${item.title || item.product_id} (requires shipping)`);
@@ -312,5 +308,233 @@ ${shopDomain} Team`;
     
   } catch (error) {
     console.error(`Error sending multiple products email to ${customerEmail}:`, error);
+  }
+}
+
+// Get PDF file URL from Shopify Files API for a specific product
+async function getProductPDFUrl(productId, shopDomain) {
+  try {
+    // Get session to make GraphQL calls
+    const { default: shopifyApp } = await import('./shopify.js');
+    const offlineId = shopifyApp.api.session.getOfflineId(shopDomain);
+    const session = await shopifyApp.config.sessionStorage.loadSession(offlineId);
+
+    if (!session) {
+      console.error(`No session found for shop: ${shopDomain}`);
+      return null;
+    }
+
+    const client = new shopifyApp.api.clients.Graphql({
+      session: session,
+      apiVersion: ApiVersion.July25,
+    });
+
+    // Query to get product with PDF metafield
+    const productQuery = `#graphql
+      query GetProductPDF($id: ID!) {
+        product(id: $id) {
+          id
+          title
+          metafield(namespace: "custom", key: "download_pdf") {
+            id
+            key
+            value
+            type
+          }
+          metafields(first: 10) {
+            nodes {
+              id
+              namespace
+              key
+              value
+              type
+            }
+          }
+        }
+      }
+    `;
+
+    const productGid = `gid://shopify/Product/${productId}`;
+    console.log(`🔍 Getting PDF metafield for product: ${productGid}`);
+
+    const response = await client.request(productQuery, {
+      variables: { id: productGid }
+    });
+
+    const product = response?.data?.product;
+    if (!product) {
+      console.log(`❌ Product not found: ${productId}`);
+      return null;
+    }
+
+    console.log(`📦 Product found: ${product.title} (${product.id})`);
+
+    // Check for the specific PDF metafield
+    const pdfMetafield = product.metafield;
+    if (pdfMetafield && pdfMetafield.value) {
+      console.log(`✅ Found PDF metafield (custom.download_pdf):`, {
+        key: pdfMetafield.key,
+        type: pdfMetafield.type,
+        value: pdfMetafield.value
+      });
+
+      // Handle different metafield types
+      if (pdfMetafield.type === 'file_reference') {
+        // Single file reference - get the file URL
+        return await getFileUrlFromGid(pdfMetafield.value, session);
+      } else if (pdfMetafield.type === 'list.file_reference') {
+        // List of file references - parse and get the first one
+        try {
+          const fileGids = JSON.parse(pdfMetafield.value);
+          if (fileGids.length > 0) {
+            return await getFileUrlFromGid(fileGids[0], session);
+          }
+        } catch (e) {
+          console.error('Error parsing file reference list:', e);
+        }
+      } else {
+        // Direct URL or other format
+        return pdfMetafield.value;
+      }
+    }
+
+    // If custom.download_pdf not found, check all metafields for PDF-related ones
+    const allMetafields = product.metafields?.nodes || [];
+    console.log(`🔍 Checking ${allMetafields.length} metafields for PDF:`);
+    
+    allMetafields.forEach((metafield, index) => {
+      console.log(`📄 Metafield ${index + 1}:`, {
+        namespace: metafield.namespace,
+        key: metafield.key,
+        type: metafield.type,
+        value: metafield.value?.substring(0, 100) + (metafield.value?.length > 100 ? '...' : '')
+      });
+    });
+
+    // Look for PDF-related metafields
+    const pdfMetafields = allMetafields.filter(metafield => {
+      const key = metafield.key.toLowerCase();
+      const namespace = metafield.namespace.toLowerCase();
+      return (
+        key.includes('pdf') ||
+        key.includes('download') ||
+        key === 'download_pdf' ||
+        (namespace === 'custom' && (key.includes('pdf') || key.includes('download')))
+      );
+    });
+
+    if (pdfMetafields.length > 0) {
+      const selectedMetafield = pdfMetafields[0];
+      console.log(`✅ Found PDF-related metafield:`, {
+        namespace: selectedMetafield.namespace,
+        key: selectedMetafield.key,
+        type: selectedMetafield.type,
+        value: selectedMetafield.value
+      });
+
+      // Handle different metafield types
+      if (selectedMetafield.type === 'file_reference') {
+        return await getFileUrlFromGid(selectedMetafield.value, session);
+      } else if (selectedMetafield.type === 'list.file_reference') {
+        try {
+          const fileGids = JSON.parse(selectedMetafield.value);
+          if (fileGids.length > 0) {
+            return await getFileUrlFromGid(fileGids[0], session);
+          }
+        } catch (e) {
+          console.error('Error parsing file reference list:', e);
+        }
+      } else {
+        return selectedMetafield.value;
+      }
+    }
+
+    console.log(`❌ No PDF metafield found for product ${productId}`);
+    console.log(`Available metafields:`, allMetafields.map(m => `${m.namespace}.${m.key}`));
+    return null;
+
+  } catch (error) {
+    console.error(`❌ Error getting PDF URL for product ${productId}:`, error);
+    return null;
+  }
+}
+
+// Helper function to get file URL from GID
+async function getFileUrlFromGid(fileGid, session) {
+  try {
+    console.log(`🔍 Getting file URL for GID: ${fileGid}`);
+    
+    const { default: shopifyApp } = await import('./shopify.js');
+    const client = new shopifyApp.api.clients.Graphql({
+      session: session,
+      apiVersion: ApiVersion.July25,
+    });
+
+    const fileQuery = `#graphql
+      query GetFile($id: ID!) {
+        node(id: $id) {
+          ... on GenericFile {
+            id
+            url
+            alt
+            fileStatus
+            originalFileSize
+            mimeType
+          }
+          ... on MediaImage {
+            id
+            image {
+              url
+            }
+            alt
+            fileStatus
+          }
+        }
+      }
+    `;
+
+    const response = await client.request(fileQuery, {
+      variables: { id: fileGid }
+    });
+
+    const file = response?.data?.node;
+    if (!file) {
+      console.log(`❌ File not found for GID: ${fileGid}`);
+      return null;
+    }
+
+    console.log(`📄 File details:`, {
+      id: file.id,
+      alt: file.alt,
+      fileStatus: file.fileStatus,
+      mimeType: file.mimeType,
+      hasDirectUrl: !!file.url,
+      hasImageUrl: !!(file.image && file.image.url)
+    });
+
+    // Get URL based on file type
+    let fileUrl = null;
+    if (file.url) {
+      // GenericFile has direct url
+      fileUrl = file.url;
+    } else if (file.image && file.image.url) {
+      // MediaImage has nested url
+      fileUrl = file.image.url;
+    }
+
+    if (file.fileStatus === 'READY' && fileUrl) {
+      console.log(`✅ File URL retrieved: ${fileUrl}`);
+      return fileUrl;
+    } else {
+      console.warn(`⚠️ File not ready or missing URL:`, {
+        fileStatus: file.fileStatus,
+        hasUrl: !!fileUrl
+      });
+      return null;
+    }
+
+  } catch (error) {
+    console.error(`❌ Error getting file URL from GID ${fileGid}:`, error);
+    return null;
   }
 }

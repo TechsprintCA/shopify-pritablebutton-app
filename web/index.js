@@ -308,24 +308,23 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
         }
       }
 
-      // Build Shopify GID for lookup from provided product_id, but store product_id as-is
-      const productGid = `gid://shopify/Product/${String(product_id).replace(/[^0-9]/g, "")}`;
-
-      // Now find the product in our database
-      const productResult = await db.query(
-        "SELECT product_gid, title, pdf_url FROM products WHERE shop_domain = $1 AND product_gid = $2",
-        [session.shop, productGid]
-      );
-
-      if (productResult.rows.length === 0) {
+      // Get PDF URL from Shopify Files API
+      const numericProductId = String(product_id).replace(/[^0-9]/g, "");
+      const pdfUrl = await getProductPDFUrl(numericProductId, session.shop);
+      
+      if (!pdfUrl) {
         res.status(404).json({ 
-          error: "Product not found", 
+          error: "PDF file not found for this product", 
           product_id: product_id 
         });
         return;
       }
 
-      const product = productResult.rows[0];
+      const product = {
+        product_gid: `gid://shopify/Product/${numericProductId}`,
+        title: `Product ${numericProductId}`, // We'll get this from the order data or API if needed
+        pdf_url: pdfUrl
+      };
 
       // Store customer in our database for tracking
       await db.query(`
@@ -418,21 +417,23 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
     }
 
     try {
-      // Build Shopify GID for lookup from provided product_id, but store product_id as-is
-      const productGid = `gid://shopify/Product/${String(product_id).replace(/[^0-9]/g, "")}`;
-
-      // Lookup product in DB
-      const productResult = await db.query(
-        "SELECT product_gid, title, pdf_url FROM products WHERE shop_domain = $1 AND product_gid = $2",
-        [session.shop, productGid]
-      );
-
-      if (productResult.rows.length === 0) {
-        res.status(404).json({ error: "Product not found", product_id });
+      // Get PDF URL from Shopify Files API
+      const numericProductId = String(product_id).replace(/[^0-9]/g, "");
+      const pdfUrl = await getProductPDFUrl(numericProductId, session.shop);
+      
+      if (!pdfUrl) {
+        res.status(404).json({ 
+          error: "PDF file not found for this product", 
+          product_id: product_id 
+        });
         return;
       }
 
-      const product = productResult.rows[0];
+      const product = {
+        product_gid: `gid://shopify/Product/${numericProductId}`,
+        title: `Product ${numericProductId}`,
+        pdf_url: pdfUrl
+      };
 
       const firstName = (name || "").trim().split(' ')[0] || '';
       const lastName = (name || "").trim().split(' ').slice(1).join(' ') || '';
@@ -532,19 +533,22 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
     }
 
     try {
-      // Lookup product in DB using GID constructed from numeric ID
-      const productGid = `gid://shopify/Product/${productIdTag}`;
-      const productResult = await db.query(
-        "SELECT product_gid, title, pdf_url FROM products WHERE shop_domain = $1 AND product_gid = $2",
-        [session.shop, productGid]
-      );
-
-      if (productResult.rows.length === 0) {
-        res.status(404).json({ error: "Product not found", product_id });
+      // Get PDF URL from Shopify Files API
+      const pdfUrl = await getProductPDFUrl(productIdTag, session.shop);
+      
+      if (!pdfUrl) {
+        res.status(404).json({ 
+          error: "PDF file not found for this product", 
+          product_id: product_id 
+        });
         return;
       }
 
-      const product = productResult.rows[0];
+      const product = {
+        product_gid: `gid://shopify/Product/${productIdTag}`,
+        title: `Product ${productIdTag}`,
+        pdf_url: pdfUrl
+      };
 
       // Update downloads list for this customer (upsert, idempotent append)
       const firstName = (name || "").trim().split(' ')[0] || '';
@@ -722,29 +726,6 @@ ensureTables().then(() => {
 app.use(serveStatic(STATIC_PATH, { index: false }));
 
 app.use("/*", shopify.ensureInstalledOnShop(), async (req, res, _next) => {
-  try {
-    let session = res.locals && res.locals.shopify ? res.locals.shopify.session : undefined;
-    console.log("session", session);
-    if (!session) {
-      const rawShop = req.query && req.query.shop;
-      const shop = Array.isArray(rawShop)
-        ? rawShop[0]
-        : (typeof rawShop === "string" ? rawShop : undefined);
-      if (shop && typeof shop === 'string') {
-        try {
-          const offlineId = shopify.api.session.getOfflineId(shop);
-          session = await shopify.config.sessionStorage.loadSession(offlineId);
-        } catch (e) {
-          // ignore, we just won't preload
-        }
-      }
-    }
-    if (session) {
-      await loadProductsIfEmpty(session);
-    }
-  } catch (e) {
-    console.error("Failed to load products on first run:", e);
-  }
   res
     .status(200)
     .set("Content-Type", "text/html")
@@ -812,84 +793,231 @@ async function ensureTables() {
   }
 }
 
-const PDF_URL = "https://drive.google.com/uc?export=download&id=1Opf3AXJlGuyfbHtFbEbYMT9-x9UFD9hS";
+// Get PDF file URL from Shopify Files API for a specific product
+async function getProductPDFUrl(productId, shopDomain) {
+  try {
+    // Get session to make GraphQL calls
+    const offlineId = shopify.api.session.getOfflineId(shopDomain);
+    const session = await shopify.config.sessionStorage.loadSession(offlineId);
 
-async function loadProductsIfEmpty(session) {
-  const shopDomain = session?.shop;
-  if (!shopDomain) return;
+    if (!session) {
+      console.error(`No session found for shop: ${shopDomain}`);
+      return null;
+    }
 
-  // Check if this shop already has products stored
-  const countResult = await db.query(
-    "SELECT COUNT(*)::int AS count FROM products WHERE shop_domain = $1",
-    [shopDomain]
-  );
-  const rows = countResult.rows || [];
-  const row0 = rows.length > 0 ? rows[0] : undefined;
-  const existingCount = row0 ? Number(row0["count"]) : 0;
-  if (existingCount > 0) return; // already loaded once
+    const client = new shopify.api.clients.Graphql({
+      session: session,
+      apiVersion: ApiVersion.July25,
+    });
 
-  console.log(`Loading products for ${shopDomain} (first run)...`);
-  const client = new shopify.api.clients.Graphql({
-    session: session,
-    apiVersion: ApiVersion.July25,
-  });
-
-  let afterCursor = null;
-  let totalLoaded = 0;
-  
-  // Paginate until all products are fetched
-  while (true) {
-    const query = `#graphql
-      query Products($after: String) {
-        products(first: 250, after: $after) {
-          edges {
-            cursor
-            node {
-              id
-              title
-            }
+    // Query to get product with PDF metafield
+    const productQuery = `#graphql
+      query GetProductPDF($id: ID!) {
+        product(id: $id) {
+          id
+          title
+          metafield(namespace: "custom", key: "download_pdf") {
+            id
+            key
+            value
+            type
           }
-          pageInfo {
-            hasNextPage
-            endCursor
+          metafields(first: 10) {
+            nodes {
+              id
+              namespace
+              key
+              value
+              type
+            }
           }
         }
       }
     `;
 
-    const resp = await client.request(query, { variables: { after: afterCursor } });
-    const edges = resp?.data?.products?.edges || [];
+    const productGid = `gid://shopify/Product/${productId}`;
+    console.log(`🔍 Getting PDF metafield for product: ${productGid}`);
 
-    if (edges.length > 0) {
-      // Build batched insert
-      const values = [];
-      const params = [];
-      let paramIndex = 1;
-      for (const edge of edges) {
-        const node = edge.node;
-        const gid = node.id;
-        const title = node.title || "";
-        values.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
-        params.push(shopDomain, gid, title, PDF_URL);
+    const response = await client.request(productQuery, {
+      variables: { id: productGid }
+    });
+
+    const product = response?.data?.product;
+    if (!product) {
+      console.log(`❌ Product not found: ${productId}`);
+      return null;
+    }
+
+    console.log(`📦 Product found: ${product.title} (${product.id})`);
+
+    // Check for the specific PDF metafield
+    const pdfMetafield = product.metafield;
+    if (pdfMetafield && pdfMetafield.value) {
+      console.log(`✅ Found PDF metafield (custom.download_pdf):`, {
+        key: pdfMetafield.key,
+        type: pdfMetafield.type,
+        value: pdfMetafield.value
+      });
+
+      // Handle different metafield types
+      if (pdfMetafield.type === 'file_reference') {
+        // Single file reference - get the file URL
+        return await getFileUrlFromGid(pdfMetafield.value, session);
+      } else if (pdfMetafield.type === 'list.file_reference') {
+        // List of file references - parse and get the first one
+        try {
+          const fileGids = JSON.parse(pdfMetafield.value);
+          if (fileGids.length > 0) {
+            return await getFileUrlFromGid(fileGids[0], session);
+          }
+        } catch (e) {
+          console.error('Error parsing file reference list:', e);
+        }
+      } else {
+        // Direct URL or other format
+        return pdfMetafield.value;
       }
-      const sql = `
-        INSERT INTO products (shop_domain, product_gid, title, pdf_url)
-        VALUES ${values.join(", ")}
-        ON CONFLICT (shop_domain, product_gid) DO NOTHING
-      `;
-      await db.query(sql, params);
-      totalLoaded += edges.length;
-      console.log(`Loaded ${edges.length} products (${totalLoaded} total)...`);
     }
 
-    const pageInfo = resp?.data?.products?.pageInfo;
-    if (pageInfo?.hasNextPage) {
-      afterCursor = pageInfo.endCursor;
-    } else {
-      break;
+    // If custom.download_pdf not found, check all metafields for PDF-related ones
+    const allMetafields = product.metafields?.nodes || [];
+    console.log(`🔍 Checking ${allMetafields.length} metafields for PDF:`);
+    
+    allMetafields.forEach((metafield, index) => {
+      console.log(`📄 Metafield ${index + 1}:`, {
+        namespace: metafield.namespace,
+        key: metafield.key,
+        type: metafield.type,
+        value: metafield.value?.substring(0, 100) + (metafield.value?.length > 100 ? '...' : '')
+      });
+    });
+
+    // Look for PDF-related metafields
+    const pdfMetafields = allMetafields.filter(metafield => {
+      const key = metafield.key.toLowerCase();
+      const namespace = metafield.namespace.toLowerCase();
+      return (
+        key.includes('pdf') ||
+        key.includes('download') ||
+        key === 'download_pdf' ||
+        (namespace === 'custom' && (key.includes('pdf') || key.includes('download')))
+      );
+    });
+
+    if (pdfMetafields.length > 0) {
+      const selectedMetafield = pdfMetafields[0];
+      console.log(`✅ Found PDF-related metafield:`, {
+        namespace: selectedMetafield.namespace,
+        key: selectedMetafield.key,
+        type: selectedMetafield.type,
+        value: selectedMetafield.value
+      });
+
+      // Handle different metafield types
+      if (selectedMetafield.type === 'file_reference') {
+        return await getFileUrlFromGid(selectedMetafield.value, session);
+      } else if (selectedMetafield.type === 'list.file_reference') {
+        try {
+          const fileGids = JSON.parse(selectedMetafield.value);
+          if (fileGids.length > 0) {
+            return await getFileUrlFromGid(fileGids[0], session);
+          }
+        } catch (e) {
+          console.error('Error parsing file reference list:', e);
+        }
+      } else {
+        return selectedMetafield.value;
+      }
     }
+
+    console.log(`❌ No PDF metafield found for product ${productId}`);
+    console.log(`Available metafields:`, allMetafields.map(m => `${m.namespace}.${m.key}`));
+    return null;
+
+  } catch (error) {
+    console.error(`❌ Error getting PDF URL for product ${productId}:`, error);
+    return null;
   }
-
-  console.log(`Finished loading ${totalLoaded} products for ${shopDomain}`);
 }
+
+// Helper function to get file URL from GID
+async function getFileUrlFromGid(fileGid, session) {
+  try {
+    console.log(`🔍 Getting file URL for GID: ${fileGid}`);
+    
+    const client = new shopify.api.clients.Graphql({
+      session: session,
+      apiVersion: ApiVersion.July25,
+    });
+
+    const fileQuery = `#graphql
+      query GetFile($id: ID!) {
+        node(id: $id) {
+          ... on GenericFile {
+            id
+            url
+            alt
+            fileStatus
+            originalFileSize
+            mimeType
+          }
+          ... on MediaImage {
+            id
+            image {
+              url
+            }
+            alt
+            fileStatus
+          }
+        }
+      }
+    `;
+
+    const response = await client.request(fileQuery, {
+      variables: { id: fileGid }
+    });
+
+    const file = response?.data?.node;
+    if (!file) {
+      console.log(`❌ File not found for GID: ${fileGid}`);
+      return null;
+    }
+
+    console.log(`📄 File details:`, {
+      id: file.id,
+      alt: file.alt,
+      fileStatus: file.fileStatus,
+      mimeType: file.mimeType,
+      hasDirectUrl: !!file.url,
+      hasImageUrl: !!(file.image && file.image.url)
+    });
+
+    // Get URL based on file type
+    let fileUrl = null;
+    if (file.url) {
+      // GenericFile has direct url
+      fileUrl = file.url;
+    } else if (file.image && file.image.url) {
+      // MediaImage has nested url
+      fileUrl = file.image.url;
+    }
+
+    if (file.fileStatus === 'READY' && fileUrl) {
+      console.log(`✅ File URL retrieved: ${fileUrl}`);
+      return fileUrl;
+    } else {
+      console.warn(`⚠️ File not ready or missing URL:`, {
+        fileStatus: file.fileStatus,
+        hasUrl: !!fileUrl
+      });
+      return null;
+    }
+
+  } catch (error) {
+    console.error(`❌ Error getting file URL from GID ${fileGid}:`, error);
+    return null;
+  }
+}
+
+
 
