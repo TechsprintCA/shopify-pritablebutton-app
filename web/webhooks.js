@@ -38,7 +38,7 @@ export default {
         // Process digital products for confirmed and paid orders
         if (payload?.confirmed && payload?.financial_status === 'paid') {
           console.log("✅ Order is confirmed and paid, processing digital products...");
-          await processDigitalProductOrder(payload, shop);
+          await processDigitalProductOrder(payload, shop, webhookId);
         } else {
           console.log("⏳ Order not ready for processing:", {
             confirmed: payload?.confirmed,
@@ -57,9 +57,22 @@ export default {
 };
 
 // Process digital product orders
-async function processDigitalProductOrder(orderPayload, shopDomain) {
+async function processDigitalProductOrder(orderPayload, shopDomain, webhookId) {
   try {
     console.log(`Processing digital products for order ${orderPayload.id} from ${shopDomain}`);
+
+    // Check if order has already been processed
+    const existingOrder = await db.query(`
+      SELECT id, order_id, order_number, processed_at 
+      FROM orders 
+      WHERE shop_domain = $1 AND order_id = $2
+    `, [shopDomain, orderPayload.id]);
+
+    if (existingOrder.rows.length > 0) {
+      const processedOrder = existingOrder.rows[0];
+      console.log(`🔄 Order ${orderPayload.id} (number: ${orderPayload.order_number}) already processed at ${processedOrder.processed_at}. Skipping duplicate processing.`);
+      return;
+    }
 
     // Extract customer information
     const customer = orderPayload.customer;
@@ -222,6 +235,21 @@ async function processDigitalProductOrder(orderPayload, shopDomain) {
       // Multiple products email - send combined email
       await sendMultipleProductsEmail(customerEmail, customerName, digitalProducts, shopDomain);
     }
+
+    // Record the order as processed to prevent duplicate processing
+    await db.query(`
+      INSERT INTO orders (shop_domain, order_id, order_number, customer_email, webhook_id)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (shop_domain, order_id) DO NOTHING
+    `, [
+      shopDomain, 
+      orderPayload.id, 
+      orderPayload.order_number, 
+      customerEmail,
+      webhookId || null
+    ]);
+
+    console.log(`✅ Order ${orderPayload.id} (number: ${orderPayload.order_number}) processing completed and recorded.`);
 
   } catch (error) {
     console.error('Error processing digital product order:', error);

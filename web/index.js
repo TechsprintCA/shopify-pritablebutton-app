@@ -920,17 +920,37 @@ async function ensureTables() {
         UNIQUE (shop_domain, email)
       )
     `);
+
+    console.log('Creating orders table...');
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS orders (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        shop_domain text NOT NULL,
+        order_id bigint NOT NULL,
+        order_number integer NOT NULL,
+        customer_email text NOT NULL,
+        processed_at timestamptz NOT NULL DEFAULT now(),
+        webhook_id text,
+        UNIQUE (shop_domain, order_id)
+      )
+    `);
     
     // No products table schema updates needed
     console.log('No products table to update - using Shopify API directly');
     
     console.log('Creating indexes...');
-    // Only customer table indexes needed
+    // Customer table indexes
     await db.query('CREATE INDEX IF NOT EXISTS idx_customers_shop_domain ON customers (shop_domain)');
     await db.query('CREATE UNIQUE INDEX IF NOT EXISTS ux_customers_shop_lower_email ON customers (shop_domain, lower(email))');
     await db.query('CREATE INDEX IF NOT EXISTS idx_customers_customer_gid ON customers (customer_gid) WHERE customer_gid IS NOT NULL');
     await db.query('CREATE INDEX IF NOT EXISTS idx_customers_downloads_gin ON customers USING GIN (downloads)');
     await db.query('CREATE INDEX IF NOT EXISTS idx_customers_lifetime_access ON customers (lifetime_access) WHERE lifetime_access = true');
+    
+    // Orders table indexes
+    await db.query('CREATE INDEX IF NOT EXISTS idx_orders_shop_domain ON orders (shop_domain)');
+    await db.query('CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders (shop_domain, order_number)');
+    await db.query('CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON orders (customer_email)');
+    await db.query('CREATE INDEX IF NOT EXISTS idx_orders_processed_at ON orders (processed_at)');
     
     console.log('Database tables and indexes ensured successfully');
   } catch (error) {

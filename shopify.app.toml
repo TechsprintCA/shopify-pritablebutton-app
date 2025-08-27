@@ -3,7 +3,7 @@
 client_id = "8772cfd2815d09f721394db34f997d86"
 name = "pritablebutton-app"
 handle = "pritablebutton-app-1"
-application_url = "https://land-online-notre-muscles.trycloudflare.com"
+application_url = "https://plain-chris-worldwide-nitrogen.trycloudflare.com"
 embedded = true
 
 [build]
@@ -18,7 +18,7 @@ api_version = "2025-07"
 scopes = "read_products,write_products,read_customers,write_customers,read_orders,write_orders,read_order_edits,write_order_edits,read_files"
 
 [auth]
-redirect_urls = ["https://land-online-notre-muscles.trycloudflare.com/auth/callback", "https://land-online-notre-muscles.trycloudflare.com/auth/shopify/callback", "https://land-online-notre-muscles.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://plain-chris-worldwide-nitrogen.trycloudflare.com/auth/callback", "https://plain-chris-worldwide-nitrogen.trycloudflare.com/auth/shopify/callback", "https://plain-chris-worldwide-nitrogen.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false
@@ -30,4 +30,4 @@ prefix = "apps"
 subpath = "proxy"
 # Where Shopify forwards requests. It will append the remainder of the path and query.
 # This should point to your backend route that handles the proxy, which is /data/* in this app.
-url = "https://land-online-notre-muscles.trycloudflare.com/data/info"
+url = "https://plain-chris-worldwide-nitrogen.trycloudflare.com/data/info"
