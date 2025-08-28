@@ -341,11 +341,18 @@ ${shopDomain} Team`;
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      logger: true,    // enable transport-level logging
+      debug: true,     // include SMTP-level debug output
     });
 
     const mailOptions = {
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: customerEmail,
+      sender: process.env.SMTP_USER,                         // set sender header to be explicit
+      envelope: {
+        from: process.env.SMTP_USER,                         // MAIL FROM (Return-Path) — important for SPF alignment
+        to: customerEmail,
+      },  
       subject: `🎉 Your ${products.length} Digital Downloads are Ready!`,
       html: htmlContent,
       text: textContent
