@@ -20,6 +20,7 @@ const shopify = shopifyApp({
   api: {
     apiVersion: LATEST_API_VERSION,
     restResources,
+    hostName: process.env.HOSTNAME,   // 👈 required
     future: {
       customerAddressDefaultFix: true,
       lineItemBilling: true,

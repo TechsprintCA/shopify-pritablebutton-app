@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import 'dotenv/config';
+// import 'dotenv/config';
 
 // Create transporter with SMTP configuration
 const transporter = nodemailer.createTransport({

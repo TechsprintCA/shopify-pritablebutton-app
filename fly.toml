@@ -1,0 +1,27 @@
+# fly.toml app configuration file generated for shopify-pritablebutton-app on 2025-08-29T09:48:03+05:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'shopify-pritablebutton-app'
+primary_region = 'lax'
+
+[build]
+
+[env]
+  PORT = '3000'
+  SCOPES = 'read_customers,read_files,read_order_edits,read_orders,read_products,write_customers,write_order_edits,write_orders,write_products'
+  SHOPIFY_API_KEY = '8772cfd2815d09f721394db34f997d86'
+  SHOPIFY_APP_URL = 'https://shopify-pritablebutton-app.fly.dev'
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1

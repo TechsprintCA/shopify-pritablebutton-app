@@ -11,8 +11,8 @@ import PrivacyWebhookHandlers from "./privacy.js";
 import OrderWebhookHandlers from "./webhooks.js";
 import { sendDownloadEmail } from "./emailService.js";
 import { ApiVersion } from "@shopify/shopify-api";
-import dotenv from "dotenv";
-dotenv.config({ path: '../.env' });
+// import dotenv from "dotenv";
+// dotenv.config({ path: '../.env' });
 
 const PORT = parseInt(
   process.env.BACKEND_PORT || process.env.PORT || "3000",
@@ -783,13 +783,13 @@ app.get("/api/products/count", async (_req, res) => {
 
 // Check webhook URL
 app.get("/api/webhook-url", async (_req, res) => {
-  const appUrl = process.env.SHOPIFY_APP_URL || process.env.HOST || 'https://connections-florist-explained-canberra.trycloudflare.com';
+  const appUrl = process.env.SHOPIFY_APP_URL || process.env.HOST || 'https://shopify-pritablebutton-app.fly.dev';
   const webhookUrl = `${appUrl}/api/webhooks`;
   
   res.json({
     SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL,
     HOST: process.env.HOST,
-    fallbackUrl: 'https://connections-florist-explained-canberra.trycloudflare.com',
+    fallbackUrl: 'https://shopify-pritablebutton-app.fly.dev',
     finalWebhookUrl: webhookUrl,
     envVars: Object.keys(process.env).filter(key => key.includes('SHOPIFY') || key.includes('HOST'))
   });
@@ -810,7 +810,7 @@ app.post("/api/register-webhooks", async (_req, res) => {
     });
 
     // Get the webhook URL - try multiple sources
-    const appUrl = process.env.SHOPIFY_APP_URL || process.env.HOST || 'https://connections-florist-explained-canberra.trycloudflare.com';
+    const appUrl = process.env.SHOPIFY_APP_URL || process.env.HOST || 'https://shopify-pritablebutton-app.fly.dev';
     const webhookUrl = `${appUrl}/api/webhooks`;
     
     console.log(`🔧 Environment check:`, {
