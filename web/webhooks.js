@@ -105,21 +105,21 @@ async function processDigitalProductOrder(orderPayload, shopDomain, webhookId) {
         const pdfUrl = await getProductPDFUrl(item.product_id, shopDomain);
         
         if (pdfUrl) {
-          // Get real product title from Shopify API if order title is missing/generic
+          // Get product details (title and image) from Shopify API
           let productTitle = item.title;
-          if (!productTitle || productTitle.includes('Product ')) {
-            try {
-              const { default: shopifyApp } = await import('./shopify.js');
-              const offlineId = shopifyApp.api.session.getOfflineId(shopDomain);
-              const session = await shopifyApp.config.sessionStorage.loadSession(offlineId);
-              if (session) {
-                const productDetails = await getProductDetailsFromAPI(productGid, session);
-                productTitle = productDetails.title || item.title || `Product ${item.product_id}`;
-              }
-            } catch (error) {
-              console.error(`Error getting product title for ${item.product_id}:`, error);
-              productTitle = item.title || `Product ${item.product_id}`;
+          let productImageUrl = null;
+          try {
+            const { default: shopifyApp } = await import('./shopify.js');
+            const offlineId = shopifyApp.api.session.getOfflineId(shopDomain);
+            const session = await shopifyApp.config.sessionStorage.loadSession(offlineId);
+            if (session) {
+              const productDetails = await getProductDetailsFromAPI(productGid, session);
+              productTitle = productDetails.title || item.title || `Product ${item.product_id}`;
+              productImageUrl = productDetails.image_url;
             }
+          } catch (error) {
+            console.error(`Error getting product details for ${item.product_id}:`, error);
+            productTitle = item.title || `Product ${item.product_id}`;
           }
           
           digitalProducts.push({
@@ -127,6 +127,7 @@ async function processDigitalProductOrder(orderPayload, shopDomain, webhookId) {
             gid: productGid,
             title: productTitle,
             pdf_url: pdfUrl,
+            image_url: productImageUrl,
             quantity: item.quantity
           });
           productIds.push(item.product_id.toString());
@@ -223,7 +224,8 @@ async function processDigitalProductOrder(orderPayload, shopDomain, webhookId) {
         customerName,
         product.title,
         product.pdf_url,
-        shopDomain
+        shopDomain,
+        product.image_url
       );
       
       if (emailResult.success) {
@@ -259,15 +261,70 @@ async function processDigitalProductOrder(orderPayload, shopDomain, webhookId) {
 // Send email for multiple digital products
 async function sendMultipleProductsEmail(customerEmail, customerName, products, shopDomain) {
   try {
-    // Create download links HTML
-    const productLinksHtml = products.map(product => `
-      <div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea;">
-        <h4 style="margin: 0 0 10px 0; color: #2c3e50;">${product.title}</h4>
-        <a href="${product.pdf_url}" style="display: inline-block; background: #667eea; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 14px;">
-          📥 Download ${product.title}
-        </a>
-      </div>
-    `).join('');
+    // Create product showcase cards for each product
+    const productShowcaseHtml = products.map(product => {
+      const imageUrl = product.image_url || 'https://cdn.shopify.com/s/files/1/0931/6453/6129/files/Screenshot_2025-10-30_123528.png?v=1761809763';
+      return `
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; padding: 40px 20px;">
+        <tr>
+          <td align="center">
+            <table width="80%" cellpadding="0" cellspacing="0" border="0" class="product-showcase" style="width: 80%; max-width: 900px; background: #63BDE6; border-radius: 30px; overflow: hidden;">
+              <tr>
+                <td style="padding: 35px 25px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <!-- Left Column: Product Image -->
+                      <td class="product-image" width="45%" valign="middle" style=" padding-right: 15px;">
+                        <img src="${imageUrl}" alt="${product.title}" style="margin: 0 auto; width: 100%; max-width: 250px; display: block; height: auto; border-radius: 20px;" />
+                      </td>
+                      <!-- Right Column: Product Info -->
+                      <td class="product-info" width="55%" valign="middle" align="center" style="padding-left: 15px;">
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                          <tr>
+                            <td align="center" style="padding-bottom: 12px;">
+                              <h3 style="font-family: 'Urbanist', Arial, sans-serif; font-size: 32px; font-weight: 800; color: #ffffff; margin: 0; padding: 0; line-height: 1.2; text-align: center;">${product.title}</h3>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td align="center" style="padding-bottom: 20px;">
+                              <p class="product-description" style="font-family: 'Urbanist', Arial, sans-serif; font-size: 15px; font-weight: 400; color: #ffffff; margin: 0; padding: 0 5px; line-height: 1.4; opacity: 0.95; text-align: center;">High-quality digital content, ready for instant download</p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td align="center" style="text-align: center;">
+                              <!--[if mso]>
+                              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${product.pdf_url}" style="height:50px;v-text-anchor:middle;width:200px;" arcsize="20%" stroke="f" fillcolor="#e7635c">
+                              <w:anchorlock/>
+                              <center>
+                              <![endif]-->
+                              <a href="${product.pdf_url}" class="button primary-button button-arrow" style="font-family: 'Urbanist', Arial, sans-serif; display: inline-block; text-decoration: none; text-align: center;">
+                                <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
+                                  <tr>
+                                    <td align="center" style="text-align: center;">
+                                      <img src="https://cdn.shopify.com/s/files/1/0931/6453/6129/files/image-removebg-preview_4.png?v=1762176633" alt="Download" width="20" height="20" style="display: inline-block; vertical-align: middle; margin-right: 8px;" />
+                                      <span style="font-size: 20px; font-weight: 700; vertical-align: middle; color:#fff">Download Now</span>
+                                    </td>
+                                  </tr>
+                                </table>
+                              </a>
+                              <!--[if mso]>
+                              </center>
+                              </v:roundrect>
+                              <![endif]-->
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    `;
+    }).join('');
 
     const productListText = products.map(product => `- ${product.title}: ${product.pdf_url}`).join('\n');
 
@@ -277,46 +334,430 @@ async function sendMultipleProductsEmail(customerEmail, customerName, products, 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Digital Downloads are Ready!</title>
+    <title>Your Downloads are Ready!</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f8f9fa; }
-        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center; color: white; }
-        .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 10px; }
-        .header p { font-size: 16px; opacity: 0.9; }
-        .content { padding: 40px 30px; }
-        .greeting { font-size: 18px; color: #2c3e50; margin-bottom: 20px; }
-        .products { margin: 30px 0; }
-        .footer { background: #2c3e50; color: #ecf0f1; padding: 30px; text-align: center; }
-        @media (max-width: 600px) { .container { margin: 10px; border-radius: 8px; } .header, .content, .footer { padding: 20px; } }
+        @import url('https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap');
+        * {
+            margin: 0;
+            padding: 0;
+            font-family: 'Urbanist', sans-serif;
+        }
+        .button {
+            border-radius: 10px;
+            background: #eea527;
+            display: inline-block;
+            padding-top: 6px;
+            padding: 10px 20px;
+            padding-top: 6px;
+            color: #fff;
+            transition: all 0.25s;
+            font-weight: bold;
+        }
+
+        .primary-button {
+            background-color: #e7635c;
+            border-color:rgb(232, 163, 159);
+            border-width: 5px;
+            border-style: solid;
+            text-decoration: none;
+        }
+        .primary-button:hover {
+            background-color: #d5807b;
+        }
+        .button-arrow {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            gap: 15px;
+        }
+        .button-arrow svg {
+            max-width: 25px;
+            min-width: 25px;
+        }
+
+        @media (min-width: 1501px) {
+            .button {
+                font-size: 24px;
+            }
+        }
+        @media (max-width: 540px) {
+            .button {
+                font-size: 18px;
+                padding: 5px 10px;
+            }
+        }
+        @media screen and (max-width: 768px) {
+            .button-arrow svg {
+                max-width: 15px;
+                min-width: 15px;
+            }
+        }
+
+        /* Section 1 - Hero Responsive */
+        .hero-section {
+            background-image: url(https://cdn.shopify.com/s/files/1/0931/6453/6129/files/Screenshot_2025-10-30_113947.png?v=1761808148);
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        /* Mobile Screens - Gmail Compatible */
+        @media only screen and (max-width: 600px), only screen and (max-device-width: 600px) {
+            /* Prevent auto-scaling */
+            * {
+                -webkit-text-size-adjust: none !important;
+                -ms-text-size-adjust: none !important;
+            }
+            
+            /* Text sizes - multiple selectors for Gmail */
+            h1, h1[style] {
+                font-size: 28px !important;
+                line-height: 1.3 !important;
+            }
+            h2, h2[style] {
+                font-size: 26px !important;
+                line-height: 1.3 !important;
+            }
+            h3, h3[style] {
+                font-size: 24px !important;
+                line-height: 1.3 !important;
+            }
+            p, p[style] {
+                font-size: 16px !important;
+                line-height: 1.5 !important;
+            }
+            
+            /* Table widths */
+            table[width="600"] {
+                width: 100% !important;
+            }
+            
+            /* Hero section */
+            .hero-section {
+                background-image: url(https://cdn.shopify.com/s/files/1/0931/6453/6129/files/Screenshot_2025-11-03_230722.png?v=1762193415) !important;
+                background-size: contain !important;
+            }
+            
+            /* Product showcase */
+            .product-showcase {
+                border-radius: 20px !important;
+                width: 95% !important;
+            }
+            .product-image,
+            .product-info {
+                display: block !important;
+                width: 100% !important;
+                padding: 0 !important;
+            }
+            .product-image {
+                padding-bottom: 20px !important;
+                text-align: center !important;
+            }
+            .product-image img {
+                max-width: 200px !important;
+                width: 200px !important;
+                height: auto !important;
+                margin: 0 auto !important;
+            }
+            
+            /* Product description - more specific */
+            .product-description, 
+            .product-description[style],
+            td .product-description {
+                font-size: 15px !important;
+                padding: 0 10px !important;
+                line-height: 1.4 !important;
+            }
+            
+            /* Button text - more specific */
+            .button-arrow span,
+            .button-arrow span[style],
+            a span[style*="font-size"] {
+                font-size: 18px !important;
+            }
+            
+            /* Button icon */
+            .button-arrow img {
+                width: 18px !important;
+                height: 18px !important;
+            }
+            
+            /* Section 4 - Info columns */
+            .info-section {
+                width: 100% !important;
+            }
+            .info-column {
+                display: block !important;
+                width: 100% !important;
+                padding: 0 !important;
+                margin-bottom: 0 !important;
+            }
+            .divider-vertical {
+                display: none !important;
+            }
+            .divider-horizontal {
+                display: table !important;
+                width: 100% !important;
+            }
+            
+            /* Adjust list font size */
+            ul, ul li {
+                font-size: 16px !important;
+            }
+            
+            /* Section 5 - CTA */
+            .cta-section {
+                width: 95% !important;
+                padding: 40px 25px !important;
+                border-radius: 25px !important;
+            }
+            .cta-description {
+                font-size: 16px !important;
+            }
+            .cta-button {
+                font-size: 20px !important;
+                padding: 15px 35px !important;
+            }
+            
+            /* Section 6 - Notice */
+            .notice-section {
+                width: 95% !important;
+            }
+            .collage-image {
+                max-width: 100% !important;
+            }
+            .notice-text {
+                font-size: 20px !important;
+            }
+            table[style*="background-color: #e4a947"] {
+                padding: 20px 25px !important;
+                border-radius: 15px !important;
+            }
+            /* Reduce outer padding for Section 6 */
+            table[style*="padding: 50px 20px"]:last-of-type {
+                padding: 30px 15px !important;
+            }
+            
+            /* Colorful Border - Force Full Width on Mobile */
+            .color-border {
+                width: 100% !important;
+                min-width: 100% !important;
+            }
+            .color-border td {
+                display: table-cell !important;
+                width: 20% !important;
+                min-width: 20% !important;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🎉 Your Downloads are Ready!</h1>
-            <p>All your digital products are now available</p>
-        </div>
-        <div class="content">
-            <div class="greeting">Hello ${customerName},</div>
-            <p>Thank you for your purchase! Your ${products.length} digital products are now ready for download.</p>
-            <div class="products">
-                <h3 style="color: #2c3e50; margin-bottom: 20px;">Your Digital Products:</h3>
-                ${productLinksHtml}
-            </div>
-            <p><strong>Important:</strong> Please save this email for your records. You can use these download links anytime to access your purchases.</p>
-            <p>Thank you for choosing us!</p>
-        </div>
-        <div class="footer">
-            <p><strong>${shopDomain}</strong></p>
-            <p>© ${new Date().getFullYear()} ${shopDomain}. All rights reserved.</p>
-        </div>
-    </div>
+    <!-- Section 1: Hero - Download Ready -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="hero-section" style="background-color: #ffffff; padding: 60px 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px;">
+                    <tr>
+                        <td align="center" style="padding-bottom: 30px;">
+                            <img src="https://cdn.shopify.com/s/files/1/0931/6453/6129/files/E_Website_About_Page_7DP_2_2_copy-04.jpg?v=1761755674" alt="Download Ready" style="width: 150px; height: 150px; display: block;" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center">
+                            <h1 style="font-family: 'Urbanist', Arial, sans-serif; font-size: 48px; font-weight: 900; color: #000000; margin: 0; padding: 0; line-height: 1.2;">Your Downloads are Ready!</h1>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+    
+    <!-- Colorful Border -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="color-border" role="presentation" style="width: 100%; min-width: 100%; table-layout: fixed;">
+        <tr>
+            <td width="20%" style="background-color: #7bbae0; height: 8px; line-height: 8px; font-size: 8px; mso-line-height-rule: exactly; width: 20%;">&nbsp;</td>
+            <td width="20%" style="background-color: #e4a947; height: 8px; line-height: 8px; font-size: 8px; mso-line-height-rule: exactly; width: 20%;">&nbsp;</td>
+            <td width="20%" style="background-color: #c55899; height: 8px; line-height: 8px; font-size: 8px; mso-line-height-rule: exactly; width: 20%;">&nbsp;</td>
+            <td width="20%" style="background-color: #d86b61; height: 8px; line-height: 8px; font-size: 8px; mso-line-height-rule: exactly; width: 20%;">&nbsp;</td>
+            <td width="20%" style="background-color: #8877b0; height: 8px; line-height: 8px; font-size: 8px; mso-line-height-rule: exactly; width: 20%;">&nbsp;</td>
+        </tr>
+    </table>
+    
+    <!-- Section 2: Greeting Message -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; padding: 50px 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px;">
+                    <tr>
+                        <td align="center" style="padding-bottom: 20px;">
+                            <h2 style="font-family: 'Urbanist', Arial, sans-serif; font-size: 42px; font-weight: 800; color: #c55899; margin: 0; padding: 0; line-height: 1.2;">Hi ${customerName || 'Valued Customer'},</h2>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center">
+                            <p style="font-family: 'Urbanist', Arial, sans-serif; font-size: 24px; font-weight: 400; color: #000000; margin: 0; padding: 0; line-height: 1.5;">Your ${products.length} printables are ready! 🎉 Can't wait for you to start using them — thank you for supporting 7 Days of Play.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+    
+    <!-- Section 3: Product Showcases (Multiple) -->
+    ${productShowcaseHtml}
+    
+    <!-- Section 4: What's Included & Need Help -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; padding: 50px 20px;">
+        <tr>
+            <td align="center">
+                <table width="75%" cellpadding="0" cellspacing="0" border="0" class="info-section" style="width: 75%; max-width: 850px;">
+                    <tr>
+                        <!-- Left Column: What's Included -->
+                        <td class="info-column" width="48%" valign="top" style="padding: 0 20px 0 0;">
+                            <h3 style="font-family: 'Urbanist', Arial, sans-serif; font-size: 32px; font-weight: 800; color: #c55899; margin: 0 0 20px 0; padding: 0;">What's Included:</h3>
+                            <ul style="font-family: 'Urbanist', Arial, sans-serif; font-size: 18px; color: #000000; margin: 0; padding: 0 0 0 20px; line-height: 1.8;">
+                                <li style="margin-bottom: 10px;">Instant download access</li>
+                                <li style="margin-bottom: 10px;">High-quality PDF format</li>
+                                <li style="margin-bottom: 10px;">Access anytime through your account or this email</li>
+                                <li style="margin-bottom: 10px;">Mobile and desktop compatible</li>
+                            </ul>
+                            <!-- Horizontal Divider (Mobile only - shows between sections) -->
+                            <table class="divider-horizontal" width="100%" cellpadding="0" cellspacing="0" border="0" style="display: none; margin: 30px 0;">
+                                <tr>
+                                    <td style="border-top: 3px solid #c55899;"></td>
+                                </tr>
+                            </table>
+                        </td>
+                        
+                        <!-- Vertical Divider (Desktop only) -->
+                        <td class="divider-vertical" width="4%" style="border-left: 3px solid #c55899; height: 200px;"></td>
+                        
+                        <!-- Right Column: Need Help -->
+                        <td class="info-column" width="48%" valign="top" style="padding: 0 0 0 20px;">
+                            <h3 style="font-family: 'Urbanist', Arial, sans-serif; font-size: 32px; font-weight: 800; color: #c55899; margin: 0 0 20px 0; padding: 0;">Need Help?</h3>
+                            <p style="font-family: 'Urbanist', Arial, sans-serif; font-size: 18px; color: #000000; margin: 0; padding: 0; line-height: 1.7;">If you have any questions or issues with your download, please don't hesitate to contact our support team.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+    
+    <!-- Colorful Border -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="color-border" role="presentation" style="width: 100%; min-width: 100%; table-layout: fixed;">
+        <tr>
+            <td width="20%" style="background-color: #7bbae0; height: 8px; line-height: 8px; font-size: 8px; mso-line-height-rule: exactly; width: 20%;">&nbsp;</td>
+            <td width="20%" style="background-color: #e4a947; height: 8px; line-height: 8px; font-size: 8px; mso-line-height-rule: exactly; width: 20%;">&nbsp;</td>
+            <td width="20%" style="background-color: #c55899; height: 8px; line-height: 8px; font-size: 8px; mso-line-height-rule: exactly; width: 20%;">&nbsp;</td>
+            <td width="20%" style="background-color: #d86b61; height: 8px; line-height: 8px; font-size: 8px; mso-line-height-rule: exactly; width: 20%;">&nbsp;</td>
+            <td width="20%" style="background-color: #8877b0; height: 8px; line-height: 8px; font-size: 8px; mso-line-height-rule: exactly; width: 20%;">&nbsp;</td>
+        </tr>
+    </table>
+    
+    <!-- Section 5: All-Access Pass CTA -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; padding: 50px 20px;">
+        <tr>
+            <td align="center">
+                <table width="80%" cellpadding="0" cellspacing="0" border="0" class="cta-section" style="width: 80%; max-width: 900px; background: #C5579A; border-radius: 40px; padding: 50px 40px;">
+                    <tr>
+                        <td align="center">
+                            <!-- Star Icon -->
+                            <table cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center" style="padding-bottom: 30px;">
+                                        <img src="https://cdn.shopify.com/s/files/1/0931/6453/6129/files/star-circel.png?v=1755514449" alt="Star" style="width: 80px; height: 80px; display: block;" />
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Heading -->
+                            <table cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center" style="padding-bottom: 20px;">
+                                        <h2 style="font-family: 'Urbanist', Arial, sans-serif; font-size: 48px; font-weight: 800; color: #ffffff; margin: 0; padding: 0; line-height: 1.2; text-align: center;">Try the All-Access Pass</h2>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Subheading -->
+                            <table cellpadding="0" cellspacing="0" border="0" style="max-width: 700px;">
+                                <tr>
+                                    <td align="center" style="padding-bottom: 10px;">
+                                        <p style="font-family: 'Urbanist', Arial, sans-serif; font-size: 22px; font-weight: 400; color: #ffffff; margin: 0; padding: 0; line-height: 1.5; text-align: center;">Love printables like this?<br/>Unlock hundreds of printables with the All-Access Pass!</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Description -->
+                            <table cellpadding="0" cellspacing="0" border="0" style="max-width: 700px;">
+                                <tr>
+                                    <td align="center" style="padding-bottom: 35px;">
+                                        <p class="cta-description" style="font-family: 'Urbanist', Arial, sans-serif; font-size: 18px; font-weight: 400; color: #ffffff; margin: 0; padding: 0; line-height: 1.6; text-align: center; opacity: 0.95;">Enjoy unlimited access to every printable in our library — plus new releases designed to make playtime fun, easy, and educational.</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- CTA Button -->
+                            <table cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center">
+                                        <!--[if mso]>
+                                        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://shop.7daysofplay.com/products/all-access-pass" style="height:60px;v-text-anchor:middle;width:350px;" arcsize="20%" stroke="f" fillcolor="#f5a623">
+                                        <w:anchorlock/>
+                                        <center>
+                                        <![endif]-->
+                                        <a href="https://shop.7daysofplay.com/products/all-access-pass" class="button primary-button" style="font-family: 'Urbanist', Arial, sans-serif; background: #eea527; border-color: #ffdca9; text-decoration: none; text-align: center; color: #fff;">
+                                            Explore the All-Access Pass
+                                        </a>
+                                        <!--[if mso]>
+                                        </center>
+                                        </v:roundrect>
+                                        <![endif]-->
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+    
+    <!-- Section 6: Product Showcase & Save Email Notice -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; padding: 50px 20px;">
+        <tr>
+            <td align="center">
+                <table width="80%" cellpadding="0" cellspacing="0" border="0" class="notice-section" style="width: 80%; max-width: 900px;">
+                    <tr>
+                        <td align="center">
+                            <!-- Product Collage Image -->
+                            <table cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center">
+                                        <img src="https://cdn.shopify.com/s/files/1/0931/6453/6129/files/Screenshot_2025-11-03_213254.png?v=1762187594" alt="Printables" class="collage-image" style="width: 100%; max-width: 900px; height: auto; display: block;" />
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Notice Box -->
+                            <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                                <tr>
+                                    <td align="center" style="background-color: #e4a947; border-radius: 20px; padding: 30px 40px;">
+                                        <p class="notice-text" style="font-family: 'Urbanist', Arial, sans-serif; font-size: 28px; font-weight: 600; color: #ffffff; margin: 0; padding: 0; line-height: 1.4; text-align: center;">Important: Save this email to easily re-download your files anytime.</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>`;
 
-    const textContent = `Hello ${customerName},
+    const textContent = `Hello ${customerName || 'Valued Customer'},
 
 Thank you for your purchase! Your ${products.length} digital products are now ready for download.
 

@@ -9,7 +9,7 @@ import db from "./db.js";
 import productCreator from "./product-creator.js";
 import PrivacyWebhookHandlers from "./privacy.js";
 import OrderWebhookHandlers from "./webhooks.js";
-import { sendDownloadEmail } from "./emailService.js";
+import { sendDownloadEmail, sendFreeStarterPackEmail } from "./emailService.js";
 import { ApiVersion } from "@shopify/shopify-api";
 // import dotenv from "dotenv";
 // dotenv.config({ path: '../.env' });
@@ -326,7 +326,8 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
       const product = {
         product_gid: productGid,
         title: productDetails.title || `Product ${numericProductId}`,
-        pdf_url: pdfUrl
+        pdf_url: pdfUrl,
+        image_url: productDetails.image_url
       };
 
       // Product data comes from Shopify API - no need to store in database
@@ -364,7 +365,8 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
           name,
           product['title'],
           product['pdf_url'],
-          session.shop
+          session.shop,
+          product['image_url']
         );
         if (emailResult.success) {
           console.log(`Download email sent to ${email}`);
@@ -441,7 +443,8 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
       const product = {
         product_gid: productGid,
         title: productDetails.title || `Product ${numericProductId}`,
-        pdf_url: pdfUrl
+        pdf_url: pdfUrl,
+        image_url: productDetails.image_url
       };
 
       // Product data comes from Shopify API - no need to store in database
@@ -480,7 +483,8 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
           name,
           product['title'],
           product['pdf_url'],
-          session.shop
+          session.shop,
+          product['image_url']
         );
         if (emailResult.success) {
           console.log(`Lifetime access download email sent to ${email}`);
@@ -562,7 +566,8 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
       const product = {
         product_gid: productGid,
         title: productDetails.title || `Product ${productIdTag}`,
-        pdf_url: pdfUrl
+        pdf_url: pdfUrl,
+        image_url: productDetails.image_url
       };
 
       // Product data comes from Shopify API - no need to store in database
@@ -599,7 +604,8 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
           name,
           product['title'],
           product['pdf_url'],
-          session.shop
+          session.shop,
+          product['image_url']
         );
         if (emailResult.success) {
           console.log(`Already downloaded - email sent to ${email}`);
@@ -756,6 +762,46 @@ app.post("/data/*", validateAppProxy, async (req, res) => {
 
     } catch (error) {
       console.error('Error in customer-downloads:', error);
+      res.status(500).json({ 
+        error: "Internal server error", 
+        details: error.message 
+      });
+      return;
+    }
+  }
+
+  if (action === "free-starter-pack-download-email") {
+    const { email } = req.body;
+    
+    if (!email) {
+      res.status(400).json({
+        error: "Missing required field: email is required"
+      });
+      return;
+    }
+
+    console.log(`📧 Sending free starter pack email to: ${email}`);
+
+    try {
+      const emailResult = await sendFreeStarterPackEmail(email);
+      
+      if (emailResult.success) {
+        console.log(`✅ Free starter pack email sent successfully to ${email}`);
+        res.status(200).json({
+          success: true,
+          message: "Free starter pack email sent successfully",
+          messageId: emailResult.messageId
+        });
+      } else {
+        console.error(`❌ Failed to send free starter pack email to ${email}:`, emailResult.error);
+        res.status(500).json({
+          success: false,
+          error: "Failed to send email",
+          details: emailResult.error
+        });
+      }
+    } catch (error) {
+      console.error('Error in free-starter-pack-download-email:', error);
       res.status(500).json({ 
         error: "Internal server error", 
         details: error.message 
