@@ -282,12 +282,12 @@ async function sendMultipleProductsEmail(customerEmail, customerName, products, 
                         <table cellpadding="0" cellspacing="0" border="0" width="100%">
                           <tr>
                             <td align="center" style="padding-bottom: 12px;">
-                              <h3 style="font-family: 'Urbanist', Arial, sans-serif; font-size: 32px; font-weight: 800; color: #ffffff; margin: 0; padding: 0; line-height: 1.2; text-align: center;">${product.title}</h3>
+                              <h3 style="font-family: Helvetica, Arial, sans-serif; font-size: 32px; font-weight: 800; color: #ffffff; margin: 0; padding: 0; line-height: 1.2; text-align: center;">${product.title}</h3>
                             </td>
                           </tr>
                           <tr>
                             <td align="center" style="padding-bottom: 20px;">
-                              <p class="product-description" style="font-family: 'Urbanist', Arial, sans-serif; font-size: 15px; font-weight: 400; color: #ffffff; margin: 0; padding: 0 5px; line-height: 1.4; opacity: 0.95; text-align: center;">High-quality digital content, ready for instant download</p>
+                              <p class="product-description" style="font-family: Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 400; color: #ffffff; margin: 0; padding: 0 5px; line-height: 1.4; opacity: 0.95; text-align: center;">High-quality digital content, ready for instant download</p>
                             </td>
                           </tr>
                           <tr>
@@ -297,7 +297,7 @@ async function sendMultipleProductsEmail(customerEmail, customerName, products, 
                               <w:anchorlock/>
                               <center>
                               <![endif]-->
-                              <a href="${product.pdf_url}" class="button primary-button button-arrow" style="font-family: 'Urbanist', Arial, sans-serif; display: inline-block; text-decoration: none; text-align: center;">
+                              <a href="${product.pdf_url}" class="button primary-button button-arrow" style="font-family: Helvetica, Arial, sans-serif; display: inline-block; text-decoration: none; text-align: center;">
                                 <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
                                   <tr>
                                     <td align="center" style="text-align: center;">
@@ -340,7 +340,7 @@ async function sendMultipleProductsEmail(customerEmail, customerName, products, 
         * {
             margin: 0;
             padding: 0;
-            font-family: 'Urbanist', sans-serif;
+            font-family: Helvetica, sans-serif;
         }
         .button {
             border-radius: 10px;
@@ -559,13 +559,13 @@ async function sendMultipleProductsEmail(customerEmail, customerName, products, 
             <td align="center">
                 <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px;">
                     <tr>
-                        <td align="center" style="padding-bottom: 30px;">
-                            <img src="https://cdn.shopify.com/s/files/1/0931/6453/6129/files/E_Website_About_Page_7DP_2_2_copy-04.jpg?v=1761755674" alt="Download Ready" style="width: 150px; height: 150px; display: block;" />
+                        <td align="center" style="padding-bottom: 20px;">
+                            <img src="https://cdn.shopify.com/s/files/1/0931/6453/6129/files/E_Website_About_Page_7DP_2_2_copy-04.jpg?v=1761755674" alt="Download Ready" style="width: 100px; height: 100px; display: block;" />
                         </td>
                     </tr>
                     <tr>
                         <td align="center">
-                            <h1 style="font-family: 'Urbanist', Arial, sans-serif; font-size: 48px; font-weight: 900; color: #000000; margin: 0; padding: 0; line-height: 1.2;">Your Downloads are Ready!</h1>
+                            <img src="https://cdn.shopify.com/s/files/1/0931/6453/6129/files/7DaysofPlay_LogoV_940_2.png?v=1753886883" alt="7 Days of Play" style="width: 400px; max-width: 100%; height: auto; display: block;" />
                         </td>
                     </tr>
                 </table>
@@ -591,12 +591,12 @@ async function sendMultipleProductsEmail(customerEmail, customerName, products, 
                 <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px;">
                     <tr>
                         <td align="center" style="padding-bottom: 20px;">
-                            <h2 style="font-family: 'Urbanist', Arial, sans-serif; font-size: 42px; font-weight: 800; color: #c55899; margin: 0; padding: 0; line-height: 1.2;">Hi ${customerName || 'Valued Customer'},</h2>
+                            <h2 style="font-family: Helvetica, Arial, sans-serif; font-size: 42px; font-weight: 800; color: #c55899; margin: 0; padding: 0; line-height: 1.2;">Hi ${customerName || 'Valued Customer'},</h2>
                         </td>
                     </tr>
                     <tr>
                         <td align="center">
-                            <p style="font-family: 'Urbanist', Arial, sans-serif; font-size: 24px; font-weight: 400; color: #000000; margin: 0; padding: 0; line-height: 1.5;">Your ${products.length} printables are ready! 🎉 Can't wait for you to start using them — thank you for supporting 7 Days of Play.</p>
+                            <p style="font-family: Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 400; color: #000000; margin: 0; padding: 0; line-height: 1.5;">Your ${products.length} printables are ready! 🎉 Can't wait for you to start using them — thank you for supporting 7 Days of Play.</p>
                         </td>
                     </tr>
                 </table>
@@ -615,8 +615,8 @@ async function sendMultipleProductsEmail(customerEmail, customerName, products, 
                     <tr>
                         <!-- Left Column: What's Included -->
                         <td class="info-column" width="48%" valign="top" style="padding: 0 20px 0 0;">
-                            <h3 style="font-family: 'Urbanist', Arial, sans-serif; font-size: 32px; font-weight: 800; color: #c55899; margin: 0 0 20px 0; padding: 0;">What's Included:</h3>
-                            <ul style="font-family: 'Urbanist', Arial, sans-serif; font-size: 18px; color: #000000; margin: 0; padding: 0 0 0 20px; line-height: 1.8;">
+                            <h3 style="font-family: Helvetica, Arial, sans-serif; font-size: 32px; font-weight: 800; color: #c55899; margin: 0 0 20px 0; padding: 0;">What's Included:</h3>
+                            <ul style="font-family: Helvetica, Arial, sans-serif; font-size: 18px; color: #000000; margin: 0; padding: 0 0 0 20px; line-height: 1.8;">
                                 <li style="margin-bottom: 10px;">Instant download access</li>
                                 <li style="margin-bottom: 10px;">High-quality PDF format</li>
                                 <li style="margin-bottom: 10px;">Access anytime through your account or this email</li>
@@ -635,8 +635,8 @@ async function sendMultipleProductsEmail(customerEmail, customerName, products, 
                         
                         <!-- Right Column: Need Help -->
                         <td class="info-column" width="48%" valign="top" style="padding: 0 0 0 20px;">
-                            <h3 style="font-family: 'Urbanist', Arial, sans-serif; font-size: 32px; font-weight: 800; color: #c55899; margin: 0 0 20px 0; padding: 0;">Need Help?</h3>
-                            <p style="font-family: 'Urbanist', Arial, sans-serif; font-size: 18px; color: #000000; margin: 0; padding: 0; line-height: 1.7;">If you have any questions or issues with your download, please don't hesitate to contact our support team.</p>
+                            <h3 style="font-family: Helvetica, Arial, sans-serif; font-size: 32px; font-weight: 800; color: #c55899; margin: 0 0 20px 0; padding: 0;">Need Help?</h3>
+                            <p style="font-family: Helvetica, Arial, sans-serif; font-size: 18px; color: #000000; margin: 0; padding: 0; line-height: 1.7;">If you have any questions or issues with your download, please don't hesitate to contact our support team.</p>
                         </td>
                     </tr>
                 </table>
@@ -675,7 +675,7 @@ async function sendMultipleProductsEmail(customerEmail, customerName, products, 
                             <table cellpadding="0" cellspacing="0" border="0">
                                 <tr>
                                     <td align="center" style="padding-bottom: 20px;">
-                                        <h2 style="font-family: 'Urbanist', Arial, sans-serif; font-size: 48px; font-weight: 800; color: #ffffff; margin: 0; padding: 0; line-height: 1.2; text-align: center;">Try the All-Access Pass</h2>
+                                        <h2 style="font-family: Helvetica, Arial, sans-serif; font-size: 48px; font-weight: 800; color: #ffffff; margin: 0; padding: 0; line-height: 1.2; text-align: center;">Try the All-Access Pass</h2>
                                     </td>
                                 </tr>
                             </table>
@@ -684,7 +684,7 @@ async function sendMultipleProductsEmail(customerEmail, customerName, products, 
                             <table cellpadding="0" cellspacing="0" border="0" style="max-width: 700px;">
                                 <tr>
                                     <td align="center" style="padding-bottom: 10px;">
-                                        <p style="font-family: 'Urbanist', Arial, sans-serif; font-size: 22px; font-weight: 400; color: #ffffff; margin: 0; padding: 0; line-height: 1.5; text-align: center;">Love printables like this?<br/>Unlock hundreds of printables with the All-Access Pass!</p>
+                                        <p style="font-family: Helvetica, Arial, sans-serif; font-size: 22px; font-weight: 400; color: #ffffff; margin: 0; padding: 0; line-height: 1.5; text-align: center;">Love printables like this?<br/>Unlock hundreds of printables with the All-Access Pass!</p>
                                     </td>
                                 </tr>
                             </table>
@@ -693,7 +693,7 @@ async function sendMultipleProductsEmail(customerEmail, customerName, products, 
                             <table cellpadding="0" cellspacing="0" border="0" style="max-width: 700px;">
                                 <tr>
                                     <td align="center" style="padding-bottom: 35px;">
-                                        <p class="cta-description" style="font-family: 'Urbanist', Arial, sans-serif; font-size: 18px; font-weight: 400; color: #ffffff; margin: 0; padding: 0; line-height: 1.6; text-align: center; opacity: 0.95;">Enjoy unlimited access to every printable in our library — plus new releases designed to make playtime fun, easy, and educational.</p>
+                                        <p class="cta-description" style="font-family: Helvetica, Arial, sans-serif; font-size: 18px; font-weight: 400; color: #ffffff; margin: 0; padding: 0; line-height: 1.6; text-align: center; opacity: 0.95;">Enjoy unlimited access to every printable in our library — plus new releases designed to make playtime fun, easy, and educational.</p>
                                     </td>
                                 </tr>
                             </table>
@@ -707,7 +707,7 @@ async function sendMultipleProductsEmail(customerEmail, customerName, products, 
                                         <w:anchorlock/>
                                         <center>
                                         <![endif]-->
-                                        <a href="https://shop.7daysofplay.com/products/all-access-pass" class="button primary-button" style="font-family: 'Urbanist', Arial, sans-serif; background: #eea527; border-color: #ffdca9; text-decoration: none; text-align: center; color: #fff;">
+                                        <a href="https://shop.7daysofplay.com/products/all-access-pass" class="button primary-button" style="font-family: Helvetica, Arial, sans-serif; background: #eea527; border-color: #ffdca9; text-decoration: none; text-align: center; color: #fff;">
                                             Explore the All-Access Pass
                                         </a>
                                         <!--[if mso]>
@@ -744,7 +744,7 @@ async function sendMultipleProductsEmail(customerEmail, customerName, products, 
                             <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                                 <tr>
                                     <td align="center" style="background-color: #e4a947; border-radius: 20px; padding: 30px 40px;">
-                                        <p class="notice-text" style="font-family: 'Urbanist', Arial, sans-serif; font-size: 28px; font-weight: 600; color: #ffffff; margin: 0; padding: 0; line-height: 1.4; text-align: center;">Important: Save this email to easily re-download your files anytime.</p>
+                                        <p class="notice-text" style="font-family: Helvetica, Arial, sans-serif; font-size: 28px; font-weight: 600; color: #ffffff; margin: 0; padding: 0; line-height: 1.4; text-align: center;">Important: Save this email to easily re-download your files anytime.</p>
                                     </td>
                                 </tr>
                             </table>
