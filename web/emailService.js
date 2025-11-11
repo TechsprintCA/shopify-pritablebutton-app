@@ -893,7 +893,7 @@ export const sendFreeStarterPackEmail = async (customerEmail) => {
                     <tr>
                         <!-- Left Column: Product Image (Full Height, No Padding) -->
                         <td class="product-image" width="45%" valign="top" style="padding: 0;">
-                            <img src="https://cdn.shopify.com/s/files/1/0931/6453/6129/files/Untitled-10-02.png?v=1757350146" alt="Free Starter Pack" style="width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 30px 0 0 30px;" />
+                            <img src="https://cdn.shopify.com/s/files/1/0931/6453/6129/files/Untitled-10-02.png?v=1757350146" alt="Free Starter Pack" style="width: 100%; height: auto; display: block; border-radius: 30px 0 0 30px;" />
                         </td>
                         <!-- Right Column: Product Info -->
                         <td class="product-info" width="55%" valign="middle" align="center" style="padding: 50px 40px;">
