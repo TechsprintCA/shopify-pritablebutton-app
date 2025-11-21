@@ -36,12 +36,11 @@ const createEmailTemplate = (customerName, productTitle, downloadUrl, shopDomain
             border-radius: 10px;
             background: #eea527;
             display: inline-block;
-            padding-top: 6px;
             padding: 10px 20px;
-            padding-top: 6px;
             color: #fff;
             transition: all 0.25s;
             font-weight: bold;
+            font-size: 18px;
         }
 
         .primary-button {
@@ -244,7 +243,7 @@ const createEmailTemplate = (customerName, productTitle, downloadUrl, shopDomain
 </head>
 <body>
     <!-- Section 1: Hero - Download Ready -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="hero-section" style="background-color: #ffffff; padding: 60px 20px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="hero-section" style="background-color: #ffffff; padding: 30px 20px;">
         <tr>
             <td align="center">
                 <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px;">
@@ -295,7 +294,7 @@ const createEmailTemplate = (customerName, productTitle, downloadUrl, shopDomain
     </table>
     
     <!-- Section 3: Product Showcase -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; padding: 40px 20px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; padding: 0px 20px;">
         <tr>
             <td align="center">
                 <table width="80%" cellpadding="0" cellspacing="0" border="0" class="product-showcase" style="width: 80%; max-width: 900px; background: #63BDE6; border-radius: 30px; overflow: hidden;">
@@ -363,7 +362,7 @@ const createEmailTemplate = (customerName, productTitle, downloadUrl, shopDomain
                         <!-- Left Column: What's Included -->
                         <td class="info-column" width="48%" valign="top" style="padding: 0 20px 0 0;">
                             <h3 style="font-family: Helvetica, Arial, sans-serif; font-size: 32px; font-weight: 800; color: #c55899; margin: 0 0 20px 0; padding: 0;">What's Included:</h3>
-                            <ul style="font-family: Helvetica, Arial, sans-serif; font-size: 18px; color: #000000; margin: 0; padding: 0 0 0 20px; line-height: 1.8;">
+                            <ul style="font-family: Helvetica, Arial, sans-serif; font-size: 18px; color: #000000; margin: 0; padding: 0 0 0 20px; line-height: 1.2;">
                                 <li style="margin-bottom: 10px;">Instant download access</li>
                                 <li style="margin-bottom: 10px;">High-quality PDF format</li>
                                 <li style="margin-bottom: 10px;">Access anytime through your account or this email</li>
@@ -383,7 +382,7 @@ const createEmailTemplate = (customerName, productTitle, downloadUrl, shopDomain
                         <!-- Right Column: Need Help -->
                         <td class="info-column" width="48%" valign="top" style="padding: 0 0 0 20px;">
                             <h3 style="font-family: Helvetica, Arial, sans-serif; font-size: 32px; font-weight: 800; color: #c55899; margin: 0 0 20px 0; padding: 0;">Need Help?</h3>
-                            <p style="font-family: Helvetica, Arial, sans-serif; font-size: 18px; color: #000000; margin: 0; padding: 0; line-height: 1.7;">If you have any questions or issues with your download, please don't hesitate to contact our support team.</p>
+                            <p style="font-family: Helvetica, Arial, sans-serif; font-size: 18px; color: #000000; margin: 0; padding: 0; line-height: 1.2;">If you have any questions or issues with your download, please don't hesitate to contact our support team.</p>
                         </td>
                     </tr>
                 </table>
@@ -491,7 +490,7 @@ const createEmailTemplate = (customerName, productTitle, downloadUrl, shopDomain
                             <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                                 <tr>
                                     <td align="center" style="background-color: #e4a947; border-radius: 20px; padding: 30px 40px;">
-                                        <p class="notice-text" style="font-family: Helvetica, Arial, sans-serif; font-size: 28px; font-weight: 600; color: #ffffff; margin: 0; padding: 0; line-height: 1.4; text-align: center;">Important: Save this email to easily re-download your file anytime.</p>
+                                        <p class="notice-text" style="font-family: Helvetica, Arial, sans-serif; font-size: 19px; font-weight: 600; color: #ffffff; margin: 0; padding: 0; line-height: 1.4; text-align: center;">Important: Save this email to easily re-download your file anytime.</p>
                                     </td>
                                 </tr>
                             </table>
@@ -501,6 +500,119 @@ const createEmailTemplate = (customerName, productTitle, downloadUrl, shopDomain
             </td>
         </tr>
     </table>
+            <!-- Colorful Border -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" class="color-border" role="presentation" style="width: 100%; min-width: 100%; table-layout: fixed;">
+            <tr>
+                <td width="20%" style="background-color: #7bbae0; height: 8px; line-height: 8px; font-size: 8px; mso-line-height-rule: exactly; width: 20%;">&nbsp;</td>
+                <td width="20%" style="background-color: #e4a947; height: 8px; line-height: 8px; font-size: 8px; mso-line-height-rule: exactly; width: 20%;">&nbsp;</td>
+                <td width="20%" style="background-color: #c55899; height: 8px; line-height: 8px; font-size: 8px; mso-line-height-rule: exactly; width: 20%;">&nbsp;</td>
+                <td width="20%" style="background-color: #d86b61; height: 8px; line-height: 8px; font-size: 8px; mso-line-height-rule: exactly; width: 20%;">&nbsp;</td>
+                <td width="20%" style="background-color: #8877b0; height: 8px; line-height: 8px; font-size: 8px; mso-line-height-rule: exactly; width: 20%;">&nbsp;</td>
+            </tr>
+        </table>
+        
+        <!-- Footer: Social Media -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; padding: 50px 20px;">
+            <tr>
+                <td align="center">
+                    <table width="80%" cellpadding="0" cellspacing="0" border="0" class="footer-section" style="width: 80%; max-width: 800px;">
+                        <!-- Follow Us Text -->
+                        <tr>
+                            <td align="center" style="padding-bottom: 30px;">
+                                <h3 style="font-family: 'Urbanist', Arial, sans-serif; font-size: 30px; font-weight: lighter; color: #0A0B09; margin: 0; padding: 0; text-align: center;">Follow Us @7daysofplay for Activity Ideas</h3>
+                            </td>
+                        </tr>
+                        
+                        <!-- Social Media Icons -->
+                        <tr>
+                            <td align="center">
+                                <table cellpadding="0" cellspacing="0" border="0" class="social-icons-table" style="display: inline-block;">
+                                    <tr>
+                                        <!-- Instagram -->
+                                        <td align="center" class="social-icon-cell" style="padding: 0 8px;">
+                                            <a href="https://instagram.com/7daysofplay" target="_blank" style="text-decoration: none;">
+                                                <table cellpadding="0" cellspacing="0" border="0">
+                                                    <tr>
+                                                        <td align="center" class="social-icon-circle" style="background-color: #63BDE6; border-radius: 50%; width: 60px; height: 60px; text-align: center; line-height: 60px;">
+                                                            <img src="https://cdn.shopify.com/s/files/1/0931/6453/6129/files/insta.png?v=1762256655" alt="Instagram" class="social-icon-img" width="30" height="30" style="display: inline-block; vertical-align: middle;" />
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </a>
+                                        </td>
+                                        
+                                        <!-- TikTok -->
+                                        <td align="center" class="social-icon-cell" style="padding: 0 8px;">
+                                            <a href="https://www.tiktok.com/@7daysofplay" target="_blank" style="text-decoration: none;">
+                                                <table cellpadding="0" cellspacing="0" border="0">
+                                                    <tr>
+                                                        <td align="center" class="social-icon-circle" style="background-color: #63BDE6; border-radius: 50%; width: 60px; height: 60px; text-align: center; line-height: 60px;">
+                                                            <img src="https://cdn.shopify.com/s/files/1/0931/6453/6129/files/tiktok_3.png?v=1762256654" alt="TikTok" class="social-icon-img" width="30" height="30" style="display: inline-block; vertical-align: middle;" />
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </a>
+                                        </td>
+                                        
+                                        <!-- Facebook -->
+                                        <td align="center" class="social-icon-cell" style="padding: 0 8px;">
+                                            <a href="https://facebook.com/7daysofplay" target="_blank" style="text-decoration: none;">
+                                                <table cellpadding="0" cellspacing="0" border="0">
+                                                    <tr>
+                                                        <td align="center" class="social-icon-circle" style="background-color: #63BDE6; border-radius: 50%; width: 60px; height: 60px; text-align: center; line-height: 60px;">
+                                                            <img src="https://cdn.shopify.com/s/files/1/0931/6453/6129/files/facebook_1.png?v=1762256654" alt="Facebook" class="social-icon-img" width="30" height="30" style="display: inline-block; vertical-align: middle;" />
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </a>
+                                        </td>
+                                        
+                                        <!-- Snapchat -->
+                                        <td align="center" class="social-icon-cell" style="padding: 0 8px;">
+                                            <a href="https://www.snapchat.com/@sevendaysofplay" target="_blank" style="text-decoration: none;">
+                                                <table cellpadding="0" cellspacing="0" border="0">
+                                                    <tr>
+                                                        <td align="center" class="social-icon-circle" style="background-color: #63BDE6; border-radius: 50%; width: 60px; height: 60px; text-align: center; line-height: 60px;">
+                                                            <img src="https://cdn.shopify.com/s/files/1/0931/6453/6129/files/snapchat.png?v=1762256654" alt="Snapchat" class="social-icon-img" width="30" height="30" style="display: inline-block; vertical-align: middle;" />
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </a>
+                                        </td>
+                                        
+                                        <!-- YouTube -->
+                                        <td align="center" class="social-icon-cell" style="padding: 0 8px;">
+                                            <a href="https://youtube.com/7daysofplayshorts" target="_blank" style="text-decoration: none;">
+                                                <table cellpadding="0" cellspacing="0" border="0">
+                                                    <tr>
+                                                        <td align="center" class="social-icon-circle" style="background-color: #63BDE6; border-radius: 50%; width: 60px; height: 60px; text-align: center; line-height: 60px;">
+                                                            <img src="https://cdn.shopify.com/s/files/1/0931/6453/6129/files/youtube.png?v=1762256654" alt="YouTube" class="social-icon-img" width="30" height="30" style="display: inline-block; vertical-align: middle;" />
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </a>
+                                        </td>
+                                        
+                                        <!-- Pinterest -->
+                                        <td align="center" class="social-icon-cell" style="padding: 0 8px;">
+                                            <a href="https://pinterest.com/7daysofplay" target="_blank" style="text-decoration: none;">
+                                                <table cellpadding="0" cellspacing="0" border="0">
+                                                    <tr>
+                                                        <td align="center" class="social-icon-circle" style="background-color: #63BDE6; border-radius: 50%; width: 60px; height: 60px; text-align: center; line-height: 60px;">
+                                                            <img src="https://cdn.shopify.com/s/files/1/0931/6453/6129/files/pinterest.png?v=1762256655" alt="Pinterest" class="social-icon-img" width="30" height="30" style="display: inline-block; vertical-align: middle;" />
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
 </body>
 </html>
   `;
@@ -565,12 +677,11 @@ export const sendFreeStarterPackEmail = async (customerEmail) => {
             border-radius: 10px;
             background: #eea527;
             display: inline-block;
-            padding-top: 6px;
             padding: 10px 20px;
-            padding-top: 6px;
             color: #fff;
             transition: all 0.25s;
             font-weight: bold;
+            font-size: 18px;
         }
         .primary-button {
             background-color: #e7635c;
@@ -853,7 +964,7 @@ export const sendFreeStarterPackEmail = async (customerEmail) => {
 </head>
 <body>
     <!-- Section 1: Hero - Download Ready -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="hero-section" style="background-color: #ffffff; padding: 60px 20px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="hero-section" style="background-color: #ffffff; padding: 30px 20px;">
         <tr>
             <td align="center">
                 <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px;">
@@ -1078,7 +1189,7 @@ export const sendFreeStarterPackEmail = async (customerEmail) => {
                     <!-- Follow Us Text -->
                     <tr>
                         <td align="center" style="padding-bottom: 30px;">
-                            <h3 style="font-family: Helvetica, Arial, sans-serif; font-size: 32px; font-weight: 600; color: #000000; margin: 0; padding: 0; text-align: center;">Follow Us @7daysofplay for Activity Ideas</h3>
+                            <h3 style="font-family: Helvetica, Arial, sans-serif; font-size: 30px; font-weight: lighter; color: #000000; margin: 0; padding: 0; text-align: center;">Follow Us @7daysofplay for Activity Ideas</h3>
                         </td>
                     </tr>
                     
